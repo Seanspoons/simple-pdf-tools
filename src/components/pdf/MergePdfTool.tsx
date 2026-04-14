@@ -413,7 +413,7 @@ export function MergePdfTool() {
     });
   }
 
-  function updateDropTarget(event: DragEvent<HTMLElement>, hoveredId: string) {
+  function updateDropTarget(_event: DragEvent<HTMLElement>, hoveredId: string) {
     if (!draggedId) {
       return;
     }
@@ -425,15 +425,22 @@ export function MergePdfTool() {
       return;
     }
 
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const shouldInsertAfter = event.clientX > bounds.left + bounds.width / 2;
-    let nextIndex = hoveredIndex + (shouldInsertAfter ? 1 : 0);
+    let nextIndex = hoveredIndex;
+    const isLastVisibleCard = hoveredIndex === files.length - 1;
 
-    if (draggedIndex < nextIndex) {
+    if (isLastVisibleCard) {
+      nextIndex = files.length - 1;
+    } else if (draggedIndex < hoveredIndex) {
       nextIndex -= 1;
     }
 
-    setDropTargetIndex(Math.max(0, Math.min(nextIndex, files.length - 1)));
+    nextIndex = Math.max(0, Math.min(nextIndex, files.length - 1));
+
+    if (nextIndex === targetIndexRef.current) {
+      return;
+    }
+
+    setDropTargetIndex(nextIndex);
   }
 
   function commitDrop() {
@@ -660,6 +667,9 @@ export function MergePdfTool() {
                     }}
                     onDragOver={(event) => {
                       event.preventDefault();
+                      updateDropTarget(event, item.id);
+                    }}
+                    onDragEnter={(event) => {
                       updateDropTarget(event, item.id);
                     }}
                     onDrop={handleCommitDrop}
