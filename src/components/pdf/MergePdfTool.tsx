@@ -2,6 +2,7 @@ import { ChangeEvent, DragEvent, useEffect, useLayoutEffect, useMemo, useRef, us
 import { ConfirmModal } from '../ConfirmModal';
 import { FloatingMessage } from '../FloatingMessage';
 import { triggerDownload } from '../../utils/exportImage';
+import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 
 type MergeItem = {
   id: string;
@@ -46,13 +47,12 @@ function moveItem<T>(items: T[], fromIndex: number, toIndex: number) {
 }
 
 async function renderPdfPreview(file: File) {
-  const { getDocument, PDFWorker } = await import('pdfjs-dist/legacy/build/pdf.mjs');
-  const worker = new PDFWorker();
+  const { getDocument, GlobalWorkerOptions } = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
   const bytes = new Uint8Array(await file.arrayBuffer());
   const pdf = await getDocument({
     data: bytes,
-    worker,
     useWorkerFetch: false,
     isEvalSupported: false
   }).promise;
@@ -86,7 +86,6 @@ async function renderPdfPreview(file: File) {
     };
   } finally {
     await pdf.destroy();
-    worker.destroy();
   }
 }
 
