@@ -87,6 +87,7 @@ export function MergePdfTool() {
   const inputRef = useRef<HTMLInputElement>(null);
   const cardRefs = useRef(new Map<string, HTMLElement>());
   const previousPositionsRef = useRef(new Map<string, DOMRect>());
+  const didDropRef = useRef(false);
   const [files, setFiles] = useState<MergeItem[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
@@ -94,7 +95,7 @@ export function MergePdfTool() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
-  const [targetId, setTargetId] = useState<string | null>(null);
+  const [targetIndex, setTargetIndex] = useState<number | null>(null);
 
   const totalSize = useMemo(
     () => files.reduce((sum, item) => sum + item.file.size, 0),
@@ -108,6 +109,26 @@ export function MergePdfTool() {
 
     return `${files.length} file${files.length === 1 ? '' : 's'} • ${formatBytes(totalSize)}`;
   }, [files, totalSize]);
+
+  const previewItems = useMemo(() => {
+    if (!draggedId || targetIndex === null) {
+      return files.map((item) => ({ type: 'file' as const, item }));
+    }
+
+    const draggedItem = files.find((item) => item.id === draggedId);
+    if (!draggedItem) {
+      return files.map((item) => ({ type: 'file' as const, item }));
+    }
+
+    const withoutDragged = files.filter((item) => item.id !== draggedId);
+    const clampedIndex = Math.max(0, Math.min(targetIndex, withoutDragged.length));
+
+    return [
+      ...withoutDragged.slice(0, clampedIndex).map((item) => ({ type: 'file' as const, item })),
+      { type: 'placeholder' as const, id: 'merge-drop-slot' },
+      ...withoutDragged.slice(clampedIndex).map((item) => ({ type: 'file' as const, item }))
+    ];
+  }, [files, draggedId, targetIndex]);
 
   useEffect(() => {
     return () => {
@@ -182,14 +203,18 @@ export function MergePdfTool() {
   useLayoutEffect(() => {
     const nextPositions = new Map<string, DOMRect>();
 
-    files.forEach((item) => {
-      const node = cardRefs.current.get(item.id);
+    previewItems.forEach((entry) => {
+      if (entry.type !== 'file') {
+        return;
+      }
+
+      const node = cardRefs.current.get(entry.item.id);
       if (!node) {
         return;
       }
 
       const nextBox = node.getBoundingClientRect();
-      const previousBox = previousPositionsRef.current.get(item.id);
+      const previousBox = previousPositionsRef.current.get(entry.item.id);
 
       if (previousBox) {
         const deltaX = previousBox.left - nextBox.left;
@@ -206,11 +231,11 @@ export function MergePdfTool() {
         }
       }
 
-      nextPositions.set(item.id, nextBox);
+      nextPositions.set(entry.item.id, nextBox);
     });
 
     previousPositionsRef.current = nextPositions;
-  }, [files]);
+  }, [previewItems]);
 
   function appendFiles(incoming: FileList | null) {
     if (!incoming) {
@@ -285,27 +310,60 @@ export function MergePdfTool() {
   }
 
   function handleCardDragStart(itemId: string) {
+    const startIndex = files.findIndex((item) => item.id === itemId);
+    if (startIndex === -1) {
+      return;
+    }
+
+    didDropRef.current = false;
     setDraggedId(itemId);
-    setTargetId(itemId);
+    setTargetIndex(startIndex);
   }
 
-  function handleCardDragEnter(targetId: string) {
-    if (!draggedId || draggedId === targetId) {
+  function updateDropTarget(event: DragEvent<HTMLElement>, hoveredId: string) {
+    if (!draggedId) {
+      return;
+    }
+
+    const draggedIndex = files.findIndex((item) => item.id === draggedId);
+    const hoveredIndex = files.findIndex((item) => item.id === hoveredId);
+
+    if (draggedIndex === -1 || hoveredIndex === -1) {
+      return;
+    }
+
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const shouldInsertAfter = event.clientX > bounds.left + bounds.width / 2;
+    let nextIndex = hoveredIndex + (shouldInsertAfter ? 1 : 0);
+
+    if (draggedIndex < nextIndex) {
+      nextIndex -= 1;
+    }
+
+    setTargetIndex(Math.max(0, Math.min(nextIndex, files.length - 1)));
+  }
+
+  function commitDrop() {
+    if (!draggedId || targetIndex === null) {
       return;
     }
 
     setFiles((current) => {
       const fromIndex = current.findIndex((item) => item.id === draggedId);
-      const toIndex = current.findIndex((item) => item.id === targetId);
-
-      if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+      if (fromIndex === -1) {
         return current;
       }
 
-      return moveItem(current, fromIndex, toIndex);
+      const nextIndex = Math.max(0, Math.min(targetIndex, current.length - 1));
+      if (fromIndex === nextIndex) {
+        return current;
+      }
+
+      return moveItem(current, fromIndex, nextIndex);
     });
 
-    setTargetId(targetId);
+    didDropRef.current = true;
+    setStatusMessage('Updated the merge order.');
   }
 
   async function runMerge() {
@@ -354,7 +412,7 @@ export function MergePdfTool() {
       return [];
     });
     setDraggedId(null);
-    setTargetId(null);
+    setTargetIndex(null);
     setStatusMessage('Ready for another merge.');
     setErrorMessage(null);
   }
@@ -451,9 +509,28 @@ export function MergePdfTool() {
           </div>
 
           {files.length > 0 ? (
-            <div className="merge-arrange-grid">
-                {files.map((item, index) => (
-                  <article
+            <div
+              className="merge-arrange-grid"
+              onDragOver={(event) => {
+                event.preventDefault();
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                commitDrop();
+                setDraggedId(null);
+                setTargetIndex(null);
+              }}
+            >
+                {previewItems.map((entry) => {
+                  if (entry.type === 'placeholder') {
+                    return <div key={entry.id} className="merge-drop-slot" aria-hidden="true" />;
+                  }
+
+                  const item = entry.item;
+                  const index = files.findIndex((file) => file.id === item.id);
+
+                  return (
+                    <article
                     key={item.id}
                     ref={(node) => {
                       if (node) {
@@ -462,20 +539,26 @@ export function MergePdfTool() {
                         cardRefs.current.delete(item.id);
                       }
                     }}
-                    className={`thumb-card merge-thumb-card ${draggedId === item.id ? 'is-dragging' : ''} ${
-                      targetId === item.id && draggedId !== item.id ? 'is-drop-target' : ''
-                    }`}
+                    className={`thumb-card merge-thumb-card ${draggedId === item.id ? 'is-dragging' : ''}`}
                     draggable={!isBusy}
                     onDragStart={(event) => {
                       event.dataTransfer.effectAllowed = 'move';
+                      event.dataTransfer.setData('text/plain', item.id);
                       handleCardDragStart(item.id);
                     }}
-                  onDragEnter={() => handleCardDragEnter(item.id)}
-                    onDragOver={(event) => event.preventDefault()}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      updateDropTarget(event, item.id);
+                    }}
                     onDragEnd={() => {
+                      const dropped = didDropRef.current;
+                      didDropRef.current = false;
                       setDraggedId(null);
-                      setTargetId(null);
-                      setStatusMessage('Updated the merge order.');
+                      setTargetIndex(null);
+
+                      if (!dropped) {
+                        setStatusMessage(null);
+                      }
                     }}
                   >
                   <button
@@ -522,7 +605,8 @@ export function MergePdfTool() {
                     </button>
                   </div>
                 </article>
-              ))}
+                  );
+                })}
             </div>
           ) : (
             <div className="preview-placeholder">
