@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { MergePdfTool } from './components/pdf/MergePdfTool';
+import mergePdfIcon from './assets/merge-pdf.svg';
 import { applyRouteSeo } from './seo';
 
 type AppRoute = '/' | '/merge-pdf' | '/split-pdf' | '/compress-pdf' | '/extract-pages' | '/rotate-pdf';
@@ -98,19 +99,17 @@ function navigateTo(path: AppRoute) {
 }
 
 function ToolIcon({ kind }: { kind: ToolCard['icon'] }) {
+  if (kind === 'merge') {
+    return (
+      <span className={`suite-tool-icon suite-tool-icon-${kind}`} aria-hidden="true">
+        <img src={mergePdfIcon} alt="" className="suite-tool-icon-image" />
+      </span>
+    );
+  }
+
   return (
     <span className={`suite-tool-icon suite-tool-icon-${kind}`} aria-hidden="true">
       <svg viewBox="0 0 72 72" className="suite-tool-icon-svg" focusable="false">
-        {kind === 'merge' ? (
-          <>
-            <path d="M17 14h23l7 7v37H17z" className="icon-surface" strokeLinejoin="round" />
-            <path d="M40 14v8h8" className="icon-accent-outline" strokeLinejoin="round" />
-            <path d="M29 28h10" className="icon-accent-stroke" />
-            <path d="M29 38h14" className="icon-accent-stroke" />
-            <path d="M32 48h20" className="icon-accent-stroke" />
-            <path d="M44 43l8 5-8 5" className="icon-accent-stroke" />
-          </>
-        ) : null}
         {kind === 'split' ? (
           <>
             <path d="M16 13h26l8 8v38H16z" className="icon-surface" strokeLinejoin="round" />

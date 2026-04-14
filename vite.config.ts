@@ -20,30 +20,30 @@ export default defineConfig(() => {
       react(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['icon.svg', 'apple-touch-icon.png', 'masked-icon.svg'],
+        includeAssets: ['icon.svg', 'apple-touch-icon.svg'],
         manifest: {
           name: 'Simple PDF Tools',
           short_name: 'PDF Tools',
           description: 'Free browser-based PDF tools for merging, splitting, and organizing documents.',
-          theme_color: '#f2f4fa',
-          background_color: '#f2f4fa',
+          theme_color: '#f3eee7',
+          background_color: '#f3eee7',
           display: 'standalone',
           start_url: base,
           icons: [
             {
-              src: `${base}pwa-192.png`,
+              src: `${base}pwa-192.svg`,
               sizes: '192x192',
-              type: 'image/png'
+              type: 'image/svg+xml'
             },
             {
-              src: `${base}pwa-512.png`,
+              src: `${base}pwa-512.svg`,
               sizes: '512x512',
-              type: 'image/png'
+              type: 'image/svg+xml'
             },
             {
-              src: `${base}pwa-512-maskable.png`,
+              src: `${base}pwa-512-maskable.svg`,
               sizes: '512x512',
-              type: 'image/png',
+              type: 'image/svg+xml',
               purpose: 'maskable'
             }
           ]

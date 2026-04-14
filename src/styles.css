@@ -468,6 +468,12 @@ select:disabled {
   display: block;
 }
 
+.suite-tool-icon-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 .icon-surface,
 .icon-surface-strong {
   fill: rgba(255, 255, 255, 0.9);
