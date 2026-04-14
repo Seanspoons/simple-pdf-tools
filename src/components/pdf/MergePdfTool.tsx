@@ -47,45 +47,40 @@ function moveItem<T>(items: T[], fromIndex: number, toIndex: number) {
 
 async function renderPdfPreview(file: File) {
   const [{ getDocument, GlobalWorkerOptions }, workerModule] = await Promise.all([
-    import('pdfjs-dist'),
-    import('pdfjs-dist/build/pdf.worker.min.mjs?url')
+    import('pdfjs-dist/legacy/build/pdf.mjs'),
+    import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url')
   ]);
 
   GlobalWorkerOptions.workerSrc = workerModule.default;
 
-  const objectUrl = URL.createObjectURL(file);
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const pdf = await getDocument({ data: bytes }).promise;
+  const page = await pdf.getPage(1);
+  const viewport = page.getViewport({ scale: 1 });
+  const scale = Math.min(220 / viewport.width, 280 / viewport.height, 1.4);
+  const scaledViewport = page.getViewport({ scale });
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
 
-  try {
-    const pdf = await getDocument(objectUrl).promise;
-    const page = await pdf.getPage(1);
-    const viewport = page.getViewport({ scale: 1 });
-    const scale = Math.min(220 / viewport.width, 280 / viewport.height, 1.4);
-    const scaledViewport = page.getViewport({ scale });
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-
-    if (!context) {
-      throw new Error('The browser could not prepare a PDF preview.');
-    }
-
-    canvas.width = Math.ceil(scaledViewport.width);
-    canvas.height = Math.ceil(scaledViewport.height);
-    context.fillStyle = '#ffffff';
-    context.fillRect(0, 0, canvas.width, canvas.height);
-
-    await page.render({
-      canvas,
-      canvasContext: context,
-      viewport: scaledViewport
-    }).promise;
-
-    return {
-      previewUrl: canvas.toDataURL('image/png'),
-      pageCount: pdf.numPages
-    };
-  } finally {
-    URL.revokeObjectURL(objectUrl);
+  if (!context) {
+    throw new Error('The browser could not prepare a PDF preview.');
   }
+
+  canvas.width = Math.ceil(scaledViewport.width);
+  canvas.height = Math.ceil(scaledViewport.height);
+  context.fillStyle = '#ffffff';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  await page.render({
+    canvas,
+    canvasContext: context,
+    viewport: scaledViewport
+  }).promise;
+
+  return {
+    previewUrl: canvas.toDataURL('image/png'),
+    pageCount: pdf.numPages
+  };
 }
 
 export function MergePdfTool() {
@@ -97,7 +92,6 @@ export function MergePdfTool() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
-  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
 
   const totalSize = useMemo(
     () => files.reduce((sum, item) => sum + item.file.size, 0),
@@ -256,13 +250,10 @@ export function MergePdfTool() {
 
   function handleCardDragStart(itemId: string) {
     setDraggedId(itemId);
-    setDropTargetId(itemId);
   }
 
-  function handleCardDrop(targetId: string) {
+  function handleCardDragEnter(targetId: string) {
     if (!draggedId || draggedId === targetId) {
-      setDraggedId(null);
-      setDropTargetId(null);
       return;
     }
 
@@ -276,10 +267,6 @@ export function MergePdfTool() {
 
       return moveItem(current, fromIndex, toIndex);
     });
-
-    setDraggedId(null);
-    setDropTargetId(null);
-    setStatusMessage('Updated the merge order.');
   }
 
   async function runMerge() {
@@ -328,7 +315,6 @@ export function MergePdfTool() {
       return [];
     });
     setDraggedId(null);
-    setDropTargetId(null);
     setStatusMessage('Ready for another merge.');
     setErrorMessage(null);
   }
@@ -341,8 +327,8 @@ export function MergePdfTool() {
             <p className="eyebrow">Merge PDF</p>
             <h1>Combine PDF files without leaving your browser.</h1>
             <p className="hero-copy">
-              Add multiple PDF files, check the actual page previews, drag them into order, and
-              export one merged document with the same step-based flow as the original tools.
+              Add multiple PDF files, check actual page previews, drag them into order, and export
+              one merged document with the same step-based flow as the original tools.
             </p>
             <div className="hero-tags" aria-label="Merge PDF highlights">
               <span className="hero-tag">Multiple PDF files</span>
@@ -376,216 +362,176 @@ export function MergePdfTool() {
         </div>
       ) : null}
 
-      <section className="layout-grid converter-layout-grid">
-        <div className="left-column">
-          <section className="panel">
-            <div className="panel-heading">
-              <div>
-                <p className="eyebrow">Step 1</p>
-                <h2>Choose your PDF files</h2>
-              </div>
-              {files.length > 0 ? (
-                <span className="file-badge">
-                  {files.length} file{files.length === 1 ? '' : 's'}
-                </span>
-              ) : null}
+      <div className="merge-flow-stack">
+        <section className="panel merge-step-panel merge-step-upload">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">Step 1</p>
+              <h2>Choose your PDF files</h2>
             </div>
-
-            <label
-              className={`upload-dropzone ${isDragging ? 'is-dragging' : ''} ${isBusy ? 'is-disabled' : ''}`}
-              onDragOver={(event) => {
-                event.preventDefault();
-                setIsDragging(true);
-              }}
-              onDragLeave={() => setIsDragging(false)}
-              onDrop={handleDrop}
-            >
-              <input
-                ref={inputRef}
-                className="sr-only"
-                type="file"
-                accept="application/pdf,.pdf"
-                multiple
-                onChange={handleInputChange}
-                disabled={isBusy}
-              />
-              <span className="upload-title">Choose PDF Files</span>
-              <span className="upload-copy">
-                Pick PDF files from your device. You can also drag and drop on desktop.
-              </span>
-            </label>
-          </section>
-
-          <div className="preview-sticky-wrap">
-            <section className="panel preview-panel">
-              <div className="panel-heading">
-                <div>
-                  <p className="eyebrow">Step 2</p>
-                  <h2>Preview your PDFs</h2>
-                </div>
-                {files.length > 0 ? <span className="dimension-badge">{formatBytes(totalSize)}</span> : null}
-              </div>
-
-              {files.length > 0 ? (
-                <div className="thumb-list">
-                  {files.map((item, index) => (
-                    <article key={item.id} className="thumb-card merge-thumb-card">
-                      <div className="merge-thumb-preview">
-                        {item.previewStatus === 'ready' && item.previewUrl ? (
-                          <img src={item.previewUrl} alt="" className="thumb-image" />
-                        ) : (
-                          <div className="thumb-image merge-thumb-placeholder">
-                            <span>{item.previewStatus === 'error' ? 'Preview unavailable' : 'Loading preview...'}</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="thumb-meta">
-                        <span className="thumb-order">#{index + 1}</span>
-                        <span className="thumb-drag-hint">
-                          {item.pageCount ? `${item.pageCount} page${item.pageCount === 1 ? '' : 's'}` : 'PDF'}
-                        </span>
-                      </div>
-                      <p className="thumb-label">{item.file.name}</p>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <div className="preview-placeholder">
-                  <p>Your PDF previews will appear here after you choose files.</p>
-                </div>
-              )}
-            </section>
-          </div>
-        </div>
-
-        <div className="right-column">
-          <section className="panel">
-            <div className="panel-heading">
-              <div>
-                <p className="eyebrow">Step 3</p>
-                <h2>Arrange the order</h2>
-              </div>
-            </div>
-
             {files.length > 0 ? (
-              <div className="thumb-list merge-arrange-grid">
-                {files.map((item, index) => (
-                  <article
-                    key={item.id}
-                    className={`thumb-card merge-thumb-card ${draggedId === item.id ? 'is-dragging' : ''} ${
-                      dropTargetId === item.id && draggedId !== item.id ? 'is-drop-target' : ''
-                    }`}
-                    draggable={!isBusy}
-                    onDragStart={() => handleCardDragStart(item.id)}
-                    onDragEnter={() => setDropTargetId(item.id)}
-                    onDragOver={(event) => event.preventDefault()}
-                    onDragEnd={() => {
-                      setDraggedId(null);
-                      setDropTargetId(null);
-                    }}
-                    onDrop={() => handleCardDrop(item.id)}
+              <span className="file-badge">
+                {files.length} file{files.length === 1 ? '' : 's'}
+              </span>
+            ) : null}
+          </div>
+
+          <label
+            className={`upload-dropzone ${isDragging ? 'is-dragging' : ''} ${isBusy ? 'is-disabled' : ''}`}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
+          >
+            <input
+              ref={inputRef}
+              className="sr-only"
+              type="file"
+              accept="application/pdf,.pdf"
+              multiple
+              onChange={handleInputChange}
+              disabled={isBusy}
+            />
+            <span className="upload-title">Choose PDF Files</span>
+            <span className="upload-copy">
+              Pick PDF files from your device. You can also drag and drop on desktop.
+            </span>
+          </label>
+        </section>
+
+        <section className="panel merge-step-panel merge-step-arrange">
+          <div className="panel-heading merge-step-heading-center">
+            <div>
+              <p className="eyebrow">Step 2</p>
+              <h2>Arrange the order</h2>
+            </div>
+            {files.length > 0 ? <span className="dimension-badge">{formatBytes(totalSize)}</span> : null}
+          </div>
+
+          {files.length > 0 ? (
+            <div className="merge-arrange-grid">
+              {files.map((item, index) => (
+                <article
+                  key={item.id}
+                  className={`thumb-card merge-thumb-card ${draggedId === item.id ? 'is-dragging' : ''}`}
+                  draggable={!isBusy}
+                  onDragStart={(event) => {
+                    event.dataTransfer.effectAllowed = 'move';
+                    handleCardDragStart(item.id);
+                  }}
+                  onDragEnter={() => handleCardDragEnter(item.id)}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDragEnd={() => {
+                    setDraggedId(null);
+                    setStatusMessage('Updated the merge order.');
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="thumb-remove-button"
+                    onClick={() => removeFile(item.id)}
+                    disabled={isBusy}
+                    aria-label={`Remove ${item.file.name}`}
                   >
+                    ×
+                  </button>
+                  <div className="merge-thumb-preview">
+                    {item.previewStatus === 'ready' && item.previewUrl ? (
+                      <img src={item.previewUrl} alt="" className="thumb-image" />
+                    ) : (
+                      <div className="thumb-image merge-thumb-placeholder">
+                        <span>{item.previewStatus === 'error' ? 'Preview unavailable' : 'Loading preview...'}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="thumb-meta">
+                    <span className="thumb-order">#{index + 1}</span>
+                    <span className="thumb-drag-hint">
+                      {item.pageCount ? `${item.pageCount} page${item.pageCount === 1 ? '' : 's'}` : 'PDF'}
+                    </span>
+                  </div>
+                  <p className="thumb-label">{item.file.name}</p>
+                  <div className="merge-mobile-actions">
                     <button
                       type="button"
-                      className="thumb-remove-button"
-                      onClick={() => removeFile(item.id)}
-                      disabled={isBusy}
-                      aria-label={`Remove ${item.file.name}`}
+                      className="thumb-inline-button"
+                      onClick={() => moveFile(index, -1)}
+                      disabled={index === 0 || isBusy}
                     >
-                      ×
+                      Move Up
                     </button>
-                    <div className="merge-thumb-preview">
-                      {item.previewStatus === 'ready' && item.previewUrl ? (
-                        <img src={item.previewUrl} alt="" className="thumb-image" />
-                      ) : (
-                        <div className="thumb-image merge-thumb-placeholder">
-                          <span>{item.previewStatus === 'error' ? 'Preview unavailable' : 'Loading preview...'}</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="thumb-meta">
-                      <span className="thumb-order">#{index + 1}</span>
-                      <span className="thumb-drag-hint">Drag to reorder</span>
-                    </div>
-                    <p className="thumb-label">{item.file.name}</p>
-                    <div className="merge-mobile-actions">
-                      <button
-                        type="button"
-                        className="thumb-inline-button"
-                        onClick={() => moveFile(index, -1)}
-                        disabled={index === 0 || isBusy}
-                      >
-                        Move Up
-                      </button>
-                      <button
-                        type="button"
-                        className="thumb-inline-button"
-                        onClick={() => moveFile(index, 1)}
-                        disabled={index === files.length - 1 || isBusy}
-                      >
-                        Move Down
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <p className="helper-text">Add PDF files first, then drag the cards here to reorder them.</p>
-            )}
-          </section>
-
-          <section className="panel">
-            <div className="panel-heading">
-              <div>
-                <p className="eyebrow">Step 4</p>
-                <h2>Review result</h2>
-              </div>
-            </div>
-
-            {files.length > 0 ? (
-              <div className="export-preview-block">
-                <p className="helper-text export-preview-label">Export summary</p>
-                <div className="export-preview-shell merge-export-shell">
-                  <div className="merge-export-summary">
-                    <p className="merge-export-summary-title">{createMergedFilename(files)}</p>
-                    <p className="helper-text">
-                      {files.length} file{files.length === 1 ? '' : 's'} will be merged into one PDF.
-                    </p>
-                    <p className="helper-text">Source size before merge: {formatBytes(totalSize)}</p>
+                    <button
+                      type="button"
+                      className="thumb-inline-button"
+                      onClick={() => moveFile(index, 1)}
+                      disabled={index === files.length - 1 || isBusy}
+                    >
+                      Move Down
+                    </button>
                   </div>
-                </div>
-                <div className="tip-note panel-description panel-description-tight" role="note">
-                  <span className="tip-note-icon" aria-hidden="true">
-                    i
-                  </span>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="preview-placeholder">
+              <p>Add PDF files first, then drag the cards here to reorder them.</p>
+            </div>
+          )}
+        </section>
+
+        <section className="panel merge-step-panel merge-step-export">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">Step 3</p>
+              <h2>Review result</h2>
+            </div>
+          </div>
+
+          {files.length > 0 ? (
+            <div className="export-preview-block">
+              <p className="helper-text export-preview-label">Export summary</p>
+              <div className="export-preview-shell merge-export-shell">
+                <div className="merge-export-summary">
+                  <p className="merge-export-summary-title">{createMergedFilename(files)}</p>
                   <p className="helper-text">
-                    The final PDF keeps the pages from each file in the order shown in Step 3.
+                    {files.length} file{files.length === 1 ? '' : 's'} will be merged into one PDF.
                   </p>
+                  <p className="helper-text">Source size before merge: {formatBytes(totalSize)}</p>
                 </div>
               </div>
-            ) : null}
-
-            <div className="export-actions">
-              <button
-                type="button"
-                className="primary-button"
-                onClick={runMerge}
-                disabled={files.length < 2 || isBusy}
-              >
-                Export Merged PDF
-              </button>
-              <button
-                type="button"
-                className="ghost-button"
-                onClick={() => setConfirmAction('clear')}
-                disabled={files.length === 0 || isBusy}
-              >
-                Start a New Merge
-              </button>
+              <div className="tip-note panel-description panel-description-tight" role="note">
+                <span className="tip-note-icon" aria-hidden="true">
+                  i
+                </span>
+                <p className="helper-text">
+                  The final PDF keeps the pages from each file in the order shown in Step 2.
+                </p>
+              </div>
             </div>
-          </section>
-        </div>
-      </section>
+          ) : null}
+
+          <div className="export-actions">
+            <button
+              type="button"
+              className="primary-button"
+              onClick={runMerge}
+              disabled={files.length < 2 || isBusy}
+            >
+              Export Merged PDF
+            </button>
+            <button
+              type="button"
+              className="ghost-button"
+              onClick={() => setConfirmAction('clear')}
+              disabled={files.length === 0 || isBusy}
+            >
+              Start a New Merge
+            </button>
+          </div>
+        </section>
+      </div>
 
       <ConfirmModal
         open={confirmAction !== null}

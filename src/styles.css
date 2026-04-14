@@ -432,6 +432,29 @@ select:disabled {
   gap: 18px;
 }
 
+.merge-flow-stack {
+  display: grid;
+  gap: 20px;
+}
+
+.merge-step-panel {
+  width: 100%;
+}
+
+.merge-step-upload,
+.merge-step-export {
+  width: min(880px, 100%);
+  margin: 0 auto;
+}
+
+.merge-step-arrange {
+  width: 100%;
+}
+
+.merge-step-heading-center {
+  align-items: center;
+}
+
 .merge-preview-list,
 .merge-arrange-list {
   display: grid;
@@ -511,12 +534,53 @@ select:disabled {
   font-size: 0.82rem;
 }
 
+.merge-pdf-frame {
+  display: block;
+  overflow: hidden;
+  background: #ffffff;
+}
+
 .merge-arrange-grid .thumb-card {
   cursor: grab;
+  padding: 8px;
 }
 
 .merge-arrange-grid .thumb-card.is-dragging {
   cursor: grabbing;
+}
+
+.merge-arrange-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.merge-arrange-grid .thumb-card {
+  flex: 0 0 120px;
+}
+
+.merge-arrange-grid .thumb-image {
+  aspect-ratio: 0.78;
+  border-radius: 12px;
+}
+
+.merge-arrange-grid .thumb-remove-button {
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+}
+
+.merge-arrange-grid .thumb-label {
+  font-size: 0.82rem;
+}
+
+.merge-arrange-grid .thumb-meta {
+  gap: 6px;
 }
 
 .merge-mobile-actions {
