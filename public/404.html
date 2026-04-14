@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Redirecting | Simple Photo Tools</title>
+    <meta
+      name="description"
+      content="Redirecting you back into Simple Photo Tools."
+    />
+    <script>
+      (function () {
+        var path = window.location.pathname + window.location.search + window.location.hash;
+        var redirectTarget = '/?p=' + encodeURIComponent(path);
+        window.location.replace(redirectTarget);
+      })();
+    </script>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Roboto, "Segoe UI", Arial, sans-serif;
+        background: #f3f1ec;
+        color: #18201b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+
+      .card {
+        width: min(560px, 100%);
+        padding: 28px;
+        border-radius: 20px;
+        border: 1px solid #d9ddd5;
+        background: #ffffff;
+        box-shadow: 0 12px 32px rgba(33, 43, 36, 0.08);
+        text-align: center;
+      }
+
+      img {
+        width: 72px;
+        height: 72px;
+        border-radius: 18px;
+      }
+
+      h1 {
+        margin: 18px 0 12px;
+        font-size: 2rem;
+        line-height: 1.05;
+      }
+
+      p {
+        margin: 0 0 20px;
+        color: #5d685f;
+      }
+
+      a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        padding: 0 18px;
+        border-radius: 999px;
+        background: #1f3b2d;
+        color: #fffdf8;
+        text-decoration: none;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <img src="/icon.svg" alt="" aria-hidden="true" />
+      <h1>Opening Simple Photo Tools…</h1>
+      <p>If the app does not open automatically, go back to the homepage.</p>
+      <a href="/">Back to Home</a>
+    </main>
+  </body>
+</html>
