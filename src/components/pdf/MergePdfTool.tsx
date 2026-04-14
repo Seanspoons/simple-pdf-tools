@@ -4,12 +4,17 @@ import { FloatingMessage } from '../FloatingMessage';
 import { triggerDownload } from '../../utils/exportImage';
 import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 
+type PreviewOrientation = 'portrait' | 'landscape';
+
 type MergeItem = {
   id: string;
   file: File;
   previewUrl: string | null;
   pageCount: number | null;
   previewStatus: 'idle' | 'loading' | 'ready' | 'error';
+  previewOrientation: PreviewOrientation;
+  rotation: 0 | 90 | 180 | 270;
+  visualRotation: number;
 };
 
 type ConfirmAction = 'clear' | null;
@@ -46,6 +51,14 @@ function moveItem<T>(items: T[], fromIndex: number, toIndex: number) {
   return next;
 }
 
+function rotateClockwise(rotation: MergeItem['rotation']): MergeItem['rotation'] {
+  if (rotation === 270) {
+    return 0;
+  }
+
+  return (rotation + 90) as MergeItem['rotation'];
+}
+
 async function renderPdfPreview(file: File) {
   const { getDocument, GlobalWorkerOptions } = await import('pdfjs-dist/legacy/build/pdf.mjs');
   GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
@@ -60,6 +73,8 @@ async function renderPdfPreview(file: File) {
   try {
     const page = await pdf.getPage(1);
     const viewport = page.getViewport({ scale: 1 });
+    const previewOrientation: PreviewOrientation =
+      viewport.width > viewport.height ? 'landscape' : 'portrait';
     const scale = Math.min(240 / viewport.width, 320 / viewport.height, 1.5);
     const scaledViewport = page.getViewport({ scale });
     const canvas = document.createElement('canvas');
@@ -69,20 +84,29 @@ async function renderPdfPreview(file: File) {
       throw new Error('The browser could not prepare a PDF preview.');
     }
 
-    canvas.width = Math.ceil(scaledViewport.width);
-    canvas.height = Math.ceil(scaledViewport.height);
-    context.fillStyle = '#ffffff';
-    context.fillRect(0, 0, canvas.width, canvas.height);
+    let previewUrl: string | null = null;
 
-    await page.render({
-      canvas,
-      canvasContext: context,
-      viewport: scaledViewport
-    }).promise;
+    try {
+      canvas.width = Math.ceil(scaledViewport.width);
+      canvas.height = Math.ceil(scaledViewport.height);
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+
+      await page.render({
+        canvas,
+        canvasContext: context,
+        viewport: scaledViewport
+      }).promise;
+
+      previewUrl = canvas.toDataURL('image/png');
+    } catch {
+      previewUrl = null;
+    }
 
     return {
-      previewUrl: canvas.toDataURL('image/png'),
-      pageCount: pdf.numPages
+      previewUrl,
+      pageCount: pdf.numPages,
+      previewOrientation
     };
   } finally {
     await pdf.destroy();
@@ -183,7 +207,7 @@ export function MergePdfTool() {
       );
 
       void renderPdfPreview(item.file)
-        .then(({ previewUrl, pageCount }) => {
+        .then(({ previewUrl, pageCount, previewOrientation }) => {
           setFiles((current) =>
             current.map((entry) =>
               entry.id === item.id
@@ -191,7 +215,8 @@ export function MergePdfTool() {
                     ...entry,
                     previewUrl,
                     pageCount,
-                    previewStatus: 'ready'
+                    previewOrientation,
+                    previewStatus: previewUrl ? 'ready' : 'error'
                   }
                 : entry
             )
@@ -204,6 +229,7 @@ export function MergePdfTool() {
               entry.id === item.id
                 ? {
                     ...entry,
+                    previewOrientation: 'portrait',
                     previewStatus: 'error'
                   }
                 : entry
@@ -271,7 +297,10 @@ export function MergePdfTool() {
         file,
         previewUrl: null,
         pageCount: null,
-        previewStatus: 'idle'
+        previewStatus: 'idle',
+        previewOrientation: 'portrait',
+        rotation: 0,
+        visualRotation: 0
       });
     });
 
@@ -321,6 +350,21 @@ export function MergePdfTool() {
       return next;
     });
     setStatusMessage('Updated the merge order.');
+  }
+
+  function rotateFile(id: string) {
+    setFiles((current) =>
+      current.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              rotation: rotateClockwise(item.rotation),
+              visualRotation: item.visualRotation + 90
+            }
+          : item
+      )
+    );
+    setStatusMessage('Updated page rotation.');
   }
 
   function clearDragPreview() {
@@ -436,14 +480,20 @@ export function MergePdfTool() {
     setStatusMessage('Merging PDF files...');
 
     try {
-      const { PDFDocument } = await import('pdf-lib');
+      const { PDFDocument, degrees } = await import('pdf-lib');
       const mergedPdf = await PDFDocument.create();
 
       for (const item of files) {
         const sourceBytes = await item.file.arrayBuffer();
         const sourcePdf = await PDFDocument.load(sourceBytes);
         const copiedPages = await mergedPdf.copyPages(sourcePdf, sourcePdf.getPageIndices());
-        copiedPages.forEach((page) => mergedPdf.addPage(page));
+        copiedPages.forEach((page) => {
+          if (item.rotation !== 0) {
+            page.setRotation(degrees(item.rotation));
+          }
+
+          mergedPdf.addPage(page);
+        });
       }
 
       const mergedBytes = await mergedPdf.save();
@@ -625,20 +675,39 @@ export function MergePdfTool() {
                       }
                     }}
                   >
-                  <button
-                    type="button"
-                    className="thumb-remove-button"
-                    onClick={() => removeFile(item.id)}
-                    disabled={isBusy}
-                    aria-label={`Remove ${item.file.name}`}
-                  >
-                    ×
-                  </button>
+                  <div className="merge-thumb-actions">
+                    <button
+                      type="button"
+                      className="merge-thumb-action-button merge-thumb-rotate-button"
+                      onClick={() => rotateFile(item.id)}
+                      disabled={isBusy}
+                      aria-label={`Rotate ${item.file.name} 90 degrees clockwise`}
+                    >
+                      ↻
+                    </button>
+                    <button
+                      type="button"
+                      className="merge-thumb-action-button merge-thumb-remove-button"
+                      onClick={() => removeFile(item.id)}
+                      disabled={isBusy}
+                      aria-label={`Remove ${item.file.name}`}
+                    >
+                      ×
+                    </button>
+                  </div>
                   <div className="merge-thumb-preview">
                     {item.previewStatus === 'ready' && item.previewUrl ? (
-                      <img src={item.previewUrl} alt="" className="thumb-image" />
+                      <img
+                        src={item.previewUrl}
+                        alt=""
+                        className="thumb-image"
+                        style={{ transform: `rotate(${item.visualRotation}deg)` }}
+                      />
                     ) : (
-                      <div className="thumb-image merge-thumb-placeholder">
+                      <div
+                        className={`merge-thumb-placeholder merge-thumb-placeholder-${item.previewOrientation}`}
+                        style={{ transform: `rotate(${item.visualRotation}deg)` }}
+                      >
                         <span>{item.previewStatus === 'error' ? 'Preview unavailable' : 'Loading preview...'}</span>
                       </div>
                     )}

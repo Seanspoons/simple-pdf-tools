@@ -519,19 +519,79 @@ select:disabled {
 
 .merge-thumb-card {
   align-content: start;
+  min-height: 252px;
 }
 
 .merge-thumb-preview {
   position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 156px;
+}
+
+.merge-thumb-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease;
+  z-index: 2;
+}
+
+.merge-thumb-card:hover .merge-thumb-actions,
+.merge-thumb-card:focus-within .merge-thumb-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.merge-thumb-action-button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid rgba(122, 45, 42, 0.18);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow:
+    0 6px 14px rgba(58, 33, 24, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.7);
+  font-size: 1rem;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.merge-thumb-rotate-button {
+  color: var(--accent);
+}
+
+.merge-thumb-remove-button {
+  color: var(--danger);
 }
 
 .merge-thumb-placeholder {
   display: grid;
   place-items: center;
-  padding: 14px;
+  width: 100%;
   text-align: center;
   color: var(--text-soft);
   font-size: 0.82rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #f4f1ea;
+  padding: 14px;
+}
+
+.merge-thumb-placeholder-portrait {
+  aspect-ratio: 0.78;
+  max-width: 100px;
+}
+
+.merge-thumb-placeholder-landscape {
+  aspect-ratio: 1.28;
+  max-width: 100%;
 }
 
 .merge-pdf-frame {
@@ -572,12 +632,12 @@ select:disabled {
 }
 
 .merge-arrange-grid .thumb-card {
-  flex: 0 0 152px;
+  flex: 0 0 176px;
 }
 
 .merge-drop-slot {
-  flex: 0 0 152px;
-  min-height: 236px;
+  flex: 0 0 176px;
+  min-height: 252px;
   border-radius: 18px;
   border: 2px dotted rgba(122, 45, 42, 0.72);
   background:
@@ -595,15 +655,21 @@ select:disabled {
 }
 
 .merge-arrange-grid .thumb-image {
-  aspect-ratio: 0.78;
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: 156px;
+  height: auto;
+  aspect-ratio: auto;
+  object-fit: contain;
   border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #ffffff;
+  transition: transform 180ms ease;
 }
 
-.merge-arrange-grid .thumb-remove-button {
-  top: 10px;
-  right: 10px;
-  width: 28px;
-  height: 28px;
+.merge-arrange-grid .merge-thumb-placeholder {
+  transition: transform 180ms ease;
 }
 
 .merge-arrange-grid .thumb-label {
@@ -2866,6 +2932,11 @@ select:disabled {
     min-height: 220px;
   }
 
+  .merge-thumb-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
   .thumb-list {
     grid-template-columns: 1fr;
   }
@@ -2881,7 +2952,8 @@ select:disabled {
 
   .thumb-hover-button,
   .thumb-main-button,
-  .thumb-remove-button {
+  .thumb-remove-button,
+  .merge-thumb-actions {
     opacity: 0;
     pointer-events: none;
   }
