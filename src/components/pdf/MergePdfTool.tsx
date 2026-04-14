@@ -89,6 +89,8 @@ export function MergePdfTool() {
   const previousPositionsRef = useRef(new Map<string, DOMRect>());
   const didDropRef = useRef(false);
   const dragPreviewRef = useRef<HTMLElement | null>(null);
+  const draggedIdRef = useRef<string | null>(null);
+  const targetIndexRef = useRef<number | null>(null);
   const [files, setFiles] = useState<MergeItem[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
@@ -97,6 +99,16 @@ export function MergePdfTool() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [targetIndex, setTargetIndex] = useState<number | null>(null);
+
+  function setDraggedItemId(value: string | null) {
+    draggedIdRef.current = value;
+    setDraggedId(value);
+  }
+
+  function setDropTargetIndex(value: number | null) {
+    targetIndexRef.current = value;
+    setTargetIndex(value);
+  }
 
   const totalSize = useMemo(
     () => files.reduce((sum, item) => sum + item.file.size, 0),
@@ -348,8 +360,13 @@ export function MergePdfTool() {
 
     dragPreviewRef.current = dragPreview;
     didDropRef.current = false;
-    setDraggedId(itemId);
-    setTargetIndex(startIndex);
+
+    // Let the browser establish the native drag session before React swaps
+    // the source tile for the placeholder slot.
+    requestAnimationFrame(() => {
+      setDraggedItemId(itemId);
+      setDropTargetIndex(startIndex);
+    });
   }
 
   function updateDropTarget(event: DragEvent<HTMLElement>, hoveredId: string) {
@@ -372,21 +389,24 @@ export function MergePdfTool() {
       nextIndex -= 1;
     }
 
-    setTargetIndex(Math.max(0, Math.min(nextIndex, files.length - 1)));
+    setDropTargetIndex(Math.max(0, Math.min(nextIndex, files.length - 1)));
   }
 
   function commitDrop() {
-    if (!draggedId || targetIndex === null) {
+    const currentDraggedId = draggedIdRef.current;
+    const currentTargetIndex = targetIndexRef.current;
+
+    if (!currentDraggedId || currentTargetIndex === null) {
       return;
     }
 
     setFiles((current) => {
-      const fromIndex = current.findIndex((item) => item.id === draggedId);
+      const fromIndex = current.findIndex((item) => item.id === currentDraggedId);
       if (fromIndex === -1) {
         return current;
       }
 
-      const nextIndex = Math.max(0, Math.min(targetIndex, current.length - 1));
+      const nextIndex = Math.max(0, Math.min(currentTargetIndex, current.length - 1));
       if (fromIndex === nextIndex) {
         return current;
       }
@@ -396,6 +416,13 @@ export function MergePdfTool() {
 
     didDropRef.current = true;
     setStatusMessage('Updated the merge order.');
+  }
+
+  function handleCommitDrop(event: DragEvent<HTMLElement>) {
+    event.preventDefault();
+    commitDrop();
+    setDraggedItemId(null);
+    setDropTargetIndex(null);
   }
 
   async function runMerge() {
@@ -443,8 +470,8 @@ export function MergePdfTool() {
       });
       return [];
     });
-    setDraggedId(null);
-    setTargetIndex(null);
+    setDraggedItemId(null);
+    setDropTargetIndex(null);
     setStatusMessage('Ready for another merge.');
     setErrorMessage(null);
   }
@@ -546,16 +573,19 @@ export function MergePdfTool() {
               onDragOver={(event) => {
                 event.preventDefault();
               }}
-              onDrop={(event) => {
-                event.preventDefault();
-                commitDrop();
-                setDraggedId(null);
-                setTargetIndex(null);
-              }}
+              onDrop={handleCommitDrop}
             >
                 {previewItems.map((entry) => {
                   if (entry.type === 'placeholder') {
-                    return <div key={entry.id} className="merge-drop-slot" aria-hidden="true" />;
+                    return (
+                      <div
+                        key={entry.id}
+                        className="merge-drop-slot"
+                        aria-hidden="true"
+                        onDragOver={(event) => event.preventDefault()}
+                        onDrop={handleCommitDrop}
+                      />
+                    );
                   }
 
                   const item = entry.item;
@@ -582,12 +612,13 @@ export function MergePdfTool() {
                       event.preventDefault();
                       updateDropTarget(event, item.id);
                     }}
+                    onDrop={handleCommitDrop}
                     onDragEnd={() => {
                       const dropped = didDropRef.current;
                       didDropRef.current = false;
                       clearDragPreview();
-                      setDraggedId(null);
-                      setTargetIndex(null);
+                      setDraggedItemId(null);
+                      setDropTargetIndex(null);
 
                       if (!dropped) {
                         setStatusMessage(null);
