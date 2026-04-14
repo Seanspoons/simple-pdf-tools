@@ -1,63 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://simplephototools.com/</loc>
+    <loc>https://simplepdftools.app/</loc>
   </url>
   <url>
-    <loc>https://simplephototools.com/watermarker</loc>
+    <loc>https://simplepdftools.app/merge-pdf</loc>
   </url>
   <url>
-    <loc>https://simplephototools.com/collage</loc>
+    <loc>https://simplepdftools.app/split-pdf</loc>
   </url>
   <url>
-    <loc>https://simplephototools.com/convert</loc>
+    <loc>https://simplepdftools.app/compress-pdf</loc>
   </url>
   <url>
-    <loc>https://simplephototools.com/resize</loc>
+    <loc>https://simplepdftools.app/extract-pages</loc>
   </url>
   <url>
-    <loc>https://simplephototools.com/compress</loc>
-  </url>
-  <url>
-    <loc>https://simplephototools.com/crop</loc>
-  </url>
-  <url>
-    <loc>https://simplephototools.com/rotate</loc>
-  </url>
-  <url>
-    <loc>https://simplephototools.com/social</loc>
-  </url>
-  <url>
-    <loc>https://simplephototools.com/metadata</loc>
-  </url>
-  <url>
-    <loc>https://simplephototools.com/resize-image-online</loc>
-  </url>
-  <url>
-    <loc>https://simplephototools.com/compress-image-online</loc>
-  </url>
-  <url>
-    <loc>https://simplephototools.com/remove-photo-metadata</loc>
-  </url>
-  <url>
-    <loc>https://simplephototools.com/crop-image-online</loc>
-  </url>
-  <url>
-    <loc>https://simplephototools.com/rotate-image-online</loc>
-  </url>
-  <url>
-    <loc>https://simplephototools.com/format-image-for-social-media</loc>
-  </url>
-  <url>
-    <loc>https://simplephototools.com/convert-image-online</loc>
-  </url>
-  <url>
-    <loc>https://simplephototools.com/convert-heic-to-jpg</loc>
-  </url>
-  <url>
-    <loc>https://simplephototools.com/add-watermark-to-photo</loc>
-  </url>
-  <url>
-    <loc>https://simplephototools.com/make-photo-collage-online</loc>
+    <loc>https://simplepdftools.app/rotate-pdf</loc>
   </url>
 </urlset>
