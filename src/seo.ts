@@ -6,7 +6,7 @@ type RouteSeo = {
   imageAlt: string;
 };
 
-const SITE_URL = 'https://simplepdftools.com';
+const SITE_URL = 'https://simplepdftools.app';
 const DEFAULT_TITLE = 'Simple PDF Tools';
 const DEFAULT_DESCRIPTION =
   'Free browser-based PDF tools for merging, splitting, rotating, and organizing documents with no uploads to our server.';
