@@ -12,25 +12,7 @@ export default defineConfig(() => {
       rollupOptions: {
         input: {
           main: resolve(__dirname, 'index.html'),
-          watermarker: resolve(__dirname, 'watermarker/index.html'),
-          collage: resolve(__dirname, 'collage/index.html'),
-          convert: resolve(__dirname, 'convert/index.html'),
-          resize: resolve(__dirname, 'resize/index.html'),
-          compress: resolve(__dirname, 'compress/index.html'),
-          crop: resolve(__dirname, 'crop/index.html'),
-          rotate: resolve(__dirname, 'rotate/index.html'),
-          social: resolve(__dirname, 'social/index.html'),
-          metadata: resolve(__dirname, 'metadata/index.html'),
-          resizeImageOnline: resolve(__dirname, 'resize-image-online/index.html'),
-          compressImageOnline: resolve(__dirname, 'compress-image-online/index.html'),
-          cropImageOnline: resolve(__dirname, 'crop-image-online/index.html'),
-          rotateImageOnline: resolve(__dirname, 'rotate-image-online/index.html'),
-          formatImageForSocialMedia: resolve(__dirname, 'format-image-for-social-media/index.html'),
-          convertImageOnline: resolve(__dirname, 'convert-image-online/index.html'),
-          removePhotoMetadata: resolve(__dirname, 'remove-photo-metadata/index.html'),
-          convertHeicToJpg: resolve(__dirname, 'convert-heic-to-jpg/index.html'),
-          addWatermarkToPhoto: resolve(__dirname, 'add-watermark-to-photo/index.html'),
-          makePhotoCollageOnline: resolve(__dirname, 'make-photo-collage-online/index.html')
+          mergePdf: resolve(__dirname, 'merge-pdf/index.html')
         }
       }
     },
