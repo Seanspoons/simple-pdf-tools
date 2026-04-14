@@ -88,6 +88,7 @@ export function MergePdfTool() {
   const cardRefs = useRef(new Map<string, HTMLElement>());
   const previousPositionsRef = useRef(new Map<string, DOMRect>());
   const didDropRef = useRef(false);
+  const dragPreviewRef = useRef<HTMLElement | null>(null);
   const [files, setFiles] = useState<MergeItem[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
@@ -132,6 +133,7 @@ export function MergePdfTool() {
 
   useEffect(() => {
     return () => {
+      dragPreviewRef.current?.remove();
       setFiles((current) => {
         current.forEach((item) => {
           if (item.previewUrl) {
@@ -309,12 +311,42 @@ export function MergePdfTool() {
     setStatusMessage('Updated the merge order.');
   }
 
-  function handleCardDragStart(itemId: string) {
+  function clearDragPreview() {
+    if (dragPreviewRef.current) {
+      dragPreviewRef.current.remove();
+      dragPreviewRef.current = null;
+    }
+  }
+
+  function handleCardDragStart(event: DragEvent<HTMLElement>, itemId: string) {
     const startIndex = files.findIndex((item) => item.id === itemId);
     if (startIndex === -1) {
       return;
     }
 
+    clearDragPreview();
+
+    const sourceCard = event.currentTarget;
+    const dragPreview = sourceCard.cloneNode(true) as HTMLElement;
+    const sourceBounds = sourceCard.getBoundingClientRect();
+
+    dragPreview.classList.add('merge-drag-preview');
+    dragPreview.style.width = `${sourceBounds.width}px`;
+    dragPreview.style.height = `${sourceBounds.height}px`;
+    dragPreview.style.position = 'fixed';
+    dragPreview.style.top = '-1000px';
+    dragPreview.style.left = '-1000px';
+    dragPreview.style.pointerEvents = 'none';
+    dragPreview.style.zIndex = '9999';
+    document.body.appendChild(dragPreview);
+
+    event.dataTransfer.setDragImage(
+      dragPreview,
+      Math.min(sourceBounds.width / 2, 56),
+      Math.min(sourceBounds.height / 2, 72)
+    );
+
+    dragPreviewRef.current = dragPreview;
     didDropRef.current = false;
     setDraggedId(itemId);
     setTargetIndex(startIndex);
@@ -544,7 +576,7 @@ export function MergePdfTool() {
                     onDragStart={(event) => {
                       event.dataTransfer.effectAllowed = 'move';
                       event.dataTransfer.setData('text/plain', item.id);
-                      handleCardDragStart(item.id);
+                      handleCardDragStart(event, item.id);
                     }}
                     onDragOver={(event) => {
                       event.preventDefault();
@@ -553,6 +585,7 @@ export function MergePdfTool() {
                     onDragEnd={() => {
                       const dropped = didDropRef.current;
                       didDropRef.current = false;
+                      clearDragPreview();
                       setDraggedId(null);
                       setTargetIndex(null);
 

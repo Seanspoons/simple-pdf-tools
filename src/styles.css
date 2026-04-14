@@ -587,6 +587,13 @@ select:disabled {
     0 0 0 2px rgba(122, 45, 42, 0.06);
 }
 
+.merge-drag-preview {
+  box-shadow:
+    0 20px 36px rgba(58, 33, 24, 0.18),
+    0 0 0 1px rgba(122, 45, 42, 0.14);
+  transform: rotate(1.5deg);
+}
+
 .merge-arrange-grid .thumb-image {
   aspect-ratio: 0.78;
   border-radius: 12px;
