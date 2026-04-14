@@ -494,6 +494,36 @@ select:disabled {
   gap: 6px;
 }
 
+.merge-thumb-card {
+  align-content: start;
+}
+
+.merge-thumb-preview {
+  position: relative;
+}
+
+.merge-thumb-placeholder {
+  display: grid;
+  place-items: center;
+  padding: 14px;
+  text-align: center;
+  color: var(--text-soft);
+  font-size: 0.82rem;
+}
+
+.merge-arrange-grid .thumb-card {
+  cursor: grab;
+}
+
+.merge-arrange-grid .thumb-card.is-dragging {
+  cursor: grabbing;
+}
+
+.merge-mobile-actions {
+  display: none;
+  gap: 8px;
+}
+
 .suite-tool-icon {
   width: 74px;
   height: 74px;
@@ -2689,6 +2719,11 @@ select:disabled {
 
   .suite-card-header {
     flex-direction: column;
+  }
+
+  .merge-mobile-actions {
+    display: flex;
+    flex-wrap: wrap;
   }
 
   .preset-save-row {

@@ -6,6 +6,9 @@ import { triggerDownload } from '../../utils/exportImage';
 type MergeItem = {
   id: string;
   file: File;
+  previewUrl: string | null;
+  pageCount: number | null;
+  previewStatus: 'idle' | 'loading' | 'ready' | 'error';
 };
 
 type ConfirmAction = 'clear' | null;
@@ -35,6 +38,56 @@ function createMergedFilename(files: MergeItem[]) {
   return `${baseName}-merged.pdf`;
 }
 
+function moveItem<T>(items: T[], fromIndex: number, toIndex: number) {
+  const next = [...items];
+  const [moved] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, moved);
+  return next;
+}
+
+async function renderPdfPreview(file: File) {
+  const [{ getDocument, GlobalWorkerOptions }, workerModule] = await Promise.all([
+    import('pdfjs-dist'),
+    import('pdfjs-dist/build/pdf.worker.min.mjs?url')
+  ]);
+
+  GlobalWorkerOptions.workerSrc = workerModule.default;
+
+  const objectUrl = URL.createObjectURL(file);
+
+  try {
+    const pdf = await getDocument(objectUrl).promise;
+    const page = await pdf.getPage(1);
+    const viewport = page.getViewport({ scale: 1 });
+    const scale = Math.min(220 / viewport.width, 280 / viewport.height, 1.4);
+    const scaledViewport = page.getViewport({ scale });
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+
+    if (!context) {
+      throw new Error('The browser could not prepare a PDF preview.');
+    }
+
+    canvas.width = Math.ceil(scaledViewport.width);
+    canvas.height = Math.ceil(scaledViewport.height);
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    await page.render({
+      canvas,
+      canvasContext: context,
+      viewport: scaledViewport
+    }).promise;
+
+    return {
+      previewUrl: canvas.toDataURL('image/png'),
+      pageCount: pdf.numPages
+    };
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 export function MergePdfTool() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<MergeItem[]>([]);
@@ -43,6 +96,8 @@ export function MergePdfTool() {
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
 
   const totalSize = useMemo(
     () => files.reduce((sum, item) => sum + item.file.size, 0),
@@ -59,9 +114,73 @@ export function MergePdfTool() {
 
   useEffect(() => {
     return () => {
-      setFiles([]);
+      setFiles((current) => {
+        current.forEach((item) => {
+          if (item.previewUrl) {
+            URL.revokeObjectURL(item.previewUrl);
+          }
+        });
+        return [];
+      });
     };
   }, []);
+
+  useEffect(() => {
+    const pendingItems = files.filter((item) => item.previewStatus === 'idle');
+    if (pendingItems.length === 0) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    pendingItems.forEach((item) => {
+      setFiles((current) =>
+        current.map((entry) =>
+          entry.id === item.id ? { ...entry, previewStatus: 'loading' } : entry
+        )
+      );
+
+      void renderPdfPreview(item.file)
+        .then(({ previewUrl, pageCount }) => {
+          if (isCancelled) {
+            return;
+          }
+
+          setFiles((current) =>
+            current.map((entry) =>
+              entry.id === item.id
+                ? {
+                    ...entry,
+                    previewUrl,
+                    pageCount,
+                    previewStatus: 'ready'
+                  }
+                : entry
+            )
+          );
+        })
+        .catch(() => {
+          if (isCancelled) {
+            return;
+          }
+
+          setFiles((current) =>
+            current.map((entry) =>
+              entry.id === item.id
+                ? {
+                    ...entry,
+                    previewStatus: 'error'
+                  }
+                : entry
+            )
+          );
+        });
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [files]);
 
   function appendFiles(incoming: FileList | null) {
     if (!incoming) {
@@ -80,7 +199,10 @@ export function MergePdfTool() {
 
       validFiles.push({
         id: createId(),
-        file
+        file,
+        previewUrl: null,
+        pageCount: null,
+        previewStatus: 'idle'
       });
     });
 
@@ -111,21 +233,52 @@ export function MergePdfTool() {
   }
 
   function moveFile(index: number, direction: -1 | 1) {
-    setFiles((current) => {
-      const nextIndex = index + direction;
-      if (nextIndex < 0 || nextIndex >= current.length) {
-        return current;
-      }
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= files.length) {
+      return;
+    }
 
-      const next = [...current];
-      const [moved] = next.splice(index, 1);
-      next.splice(nextIndex, 0, moved);
-      return next;
-    });
+    setFiles((current) => moveItem(current, index, nextIndex));
+    setStatusMessage('Updated the merge order.');
   }
 
   function removeFile(id: string) {
-    setFiles((current) => current.filter((item) => item.id !== id));
+    setFiles((current) => {
+      const next = current.filter((item) => item.id !== id);
+      const removed = current.find((item) => item.id === id);
+      if (removed?.previewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(removed.previewUrl);
+      }
+      return next;
+    });
+    setStatusMessage('Updated the merge order.');
+  }
+
+  function handleCardDragStart(itemId: string) {
+    setDraggedId(itemId);
+    setDropTargetId(itemId);
+  }
+
+  function handleCardDrop(targetId: string) {
+    if (!draggedId || draggedId === targetId) {
+      setDraggedId(null);
+      setDropTargetId(null);
+      return;
+    }
+
+    setFiles((current) => {
+      const fromIndex = current.findIndex((item) => item.id === draggedId);
+      const toIndex = current.findIndex((item) => item.id === targetId);
+
+      if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+        return current;
+      }
+
+      return moveItem(current, fromIndex, toIndex);
+    });
+
+    setDraggedId(null);
+    setDropTargetId(null);
     setStatusMessage('Updated the merge order.');
   }
 
@@ -166,7 +319,16 @@ export function MergePdfTool() {
 
   function handleStartNewMerge() {
     setConfirmAction(null);
-    setFiles([]);
+    setFiles((current) => {
+      current.forEach((item) => {
+        if (item.previewUrl?.startsWith('blob:')) {
+          URL.revokeObjectURL(item.previewUrl);
+        }
+      });
+      return [];
+    });
+    setDraggedId(null);
+    setDropTargetId(null);
     setStatusMessage('Ready for another merge.');
     setErrorMessage(null);
   }
@@ -179,12 +341,12 @@ export function MergePdfTool() {
             <p className="eyebrow">Merge PDF</p>
             <h1>Combine PDF files without leaving your browser.</h1>
             <p className="hero-copy">
-              Add multiple PDF files, set the reading order, and download one merged document with
-              the same clean step-by-step workflow as the other tools.
+              Add multiple PDF files, check the actual page previews, drag them into order, and
+              export one merged document with the same step-based flow as the original tools.
             </p>
             <div className="hero-tags" aria-label="Merge PDF highlights">
               <span className="hero-tag">Multiple PDF files</span>
-              <span className="hero-tag">Reorder before export</span>
+              <span className="hero-tag">Drag to reorder</span>
               <span className="hero-tag">Private in browser</span>
             </div>
           </div>
@@ -197,7 +359,7 @@ export function MergePdfTool() {
               i
             </span>
             <p className="helper-text">
-              Merge PDF keeps your files in the browser and combines them in the order you choose.
+              On desktop you can drag the preview cards to change the order before exporting.
             </p>
           </div>
         </div>
@@ -258,27 +420,38 @@ export function MergePdfTool() {
             <section className="panel preview-panel">
               <div className="panel-heading">
                 <div>
-                  <p className="eyebrow">Preview</p>
-                  <h2>Your merge order</h2>
+                  <p className="eyebrow">Step 2</p>
+                  <h2>Preview your PDFs</h2>
                 </div>
                 {files.length > 0 ? <span className="dimension-badge">{formatBytes(totalSize)}</span> : null}
               </div>
 
               {files.length > 0 ? (
-                <div className="merge-preview-list">
+                <div className="thumb-list">
                   {files.map((item, index) => (
-                    <article key={item.id} className="merge-preview-card">
-                      <div className="merge-preview-order">{index + 1}</div>
-                      <div className="merge-preview-copy">
-                        <p className="merge-preview-name">{item.file.name}</p>
-                        <p className="helper-text">{formatBytes(item.file.size)}</p>
+                    <article key={item.id} className="thumb-card merge-thumb-card">
+                      <div className="merge-thumb-preview">
+                        {item.previewStatus === 'ready' && item.previewUrl ? (
+                          <img src={item.previewUrl} alt="" className="thumb-image" />
+                        ) : (
+                          <div className="thumb-image merge-thumb-placeholder">
+                            <span>{item.previewStatus === 'error' ? 'Preview unavailable' : 'Loading preview...'}</span>
+                          </div>
+                        )}
                       </div>
+                      <div className="thumb-meta">
+                        <span className="thumb-order">#{index + 1}</span>
+                        <span className="thumb-drag-hint">
+                          {item.pageCount ? `${item.pageCount} page${item.pageCount === 1 ? '' : 's'}` : 'PDF'}
+                        </span>
+                      </div>
+                      <p className="thumb-label">{item.file.name}</p>
                     </article>
                   ))}
                 </div>
               ) : (
                 <div className="preview-placeholder">
-                  <p>Your PDFs will appear here after you choose files.</p>
+                  <p>Your PDF previews will appear here after you choose files.</p>
                 </div>
               )}
             </section>
@@ -289,25 +462,56 @@ export function MergePdfTool() {
           <section className="panel">
             <div className="panel-heading">
               <div>
-                <p className="eyebrow">Step 2</p>
+                <p className="eyebrow">Step 3</p>
                 <h2>Arrange the order</h2>
               </div>
             </div>
 
             {files.length > 0 ? (
-              <div className="merge-arrange-list">
+              <div className="thumb-list merge-arrange-grid">
                 {files.map((item, index) => (
-                  <article key={item.id} className="merge-arrange-card">
-                    <div className="merge-arrange-copy">
-                      <p className="merge-preview-name">{item.file.name}</p>
-                      <p className="helper-text">
-                        Position {index + 1} of {files.length}
-                      </p>
+                  <article
+                    key={item.id}
+                    className={`thumb-card merge-thumb-card ${draggedId === item.id ? 'is-dragging' : ''} ${
+                      dropTargetId === item.id && draggedId !== item.id ? 'is-drop-target' : ''
+                    }`}
+                    draggable={!isBusy}
+                    onDragStart={() => handleCardDragStart(item.id)}
+                    onDragEnter={() => setDropTargetId(item.id)}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDragEnd={() => {
+                      setDraggedId(null);
+                      setDropTargetId(null);
+                    }}
+                    onDrop={() => handleCardDrop(item.id)}
+                  >
+                    <button
+                      type="button"
+                      className="thumb-remove-button"
+                      onClick={() => removeFile(item.id)}
+                      disabled={isBusy}
+                      aria-label={`Remove ${item.file.name}`}
+                    >
+                      ×
+                    </button>
+                    <div className="merge-thumb-preview">
+                      {item.previewStatus === 'ready' && item.previewUrl ? (
+                        <img src={item.previewUrl} alt="" className="thumb-image" />
+                      ) : (
+                        <div className="thumb-image merge-thumb-placeholder">
+                          <span>{item.previewStatus === 'error' ? 'Preview unavailable' : 'Loading preview...'}</span>
+                        </div>
+                      )}
                     </div>
-                    <div className="merge-arrange-actions">
+                    <div className="thumb-meta">
+                      <span className="thumb-order">#{index + 1}</span>
+                      <span className="thumb-drag-hint">Drag to reorder</span>
+                    </div>
+                    <p className="thumb-label">{item.file.name}</p>
+                    <div className="merge-mobile-actions">
                       <button
                         type="button"
-                        className="secondary-button merge-order-button"
+                        className="thumb-inline-button"
                         onClick={() => moveFile(index, -1)}
                         disabled={index === 0 || isBusy}
                       >
@@ -315,33 +519,25 @@ export function MergePdfTool() {
                       </button>
                       <button
                         type="button"
-                        className="secondary-button merge-order-button"
+                        className="thumb-inline-button"
                         onClick={() => moveFile(index, 1)}
                         disabled={index === files.length - 1 || isBusy}
                       >
                         Move Down
-                      </button>
-                      <button
-                        type="button"
-                        className="ghost-button is-danger"
-                        onClick={() => removeFile(item.id)}
-                        disabled={isBusy}
-                      >
-                        Remove
                       </button>
                     </div>
                   </article>
                 ))}
               </div>
             ) : (
-              <p className="helper-text">Add PDF files first, then reorder them here before exporting.</p>
+              <p className="helper-text">Add PDF files first, then drag the cards here to reorder them.</p>
             )}
           </section>
 
           <section className="panel">
             <div className="panel-heading">
               <div>
-                <p className="eyebrow">Step 3</p>
+                <p className="eyebrow">Step 4</p>
                 <h2>Review result</h2>
               </div>
             </div>
@@ -363,7 +559,7 @@ export function MergePdfTool() {
                     i
                   </span>
                   <p className="helper-text">
-                    The final PDF keeps the pages from each file in the order shown above.
+                    The final PDF keeps the pages from each file in the order shown in Step 3.
                   </p>
                 </div>
               </div>
