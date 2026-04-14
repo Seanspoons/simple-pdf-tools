@@ -176,6 +176,14 @@ function RouteIntro({
 
   return (
     <section className="site-intro panel">
+      <a
+        className="site-intro-link"
+        href="https://simplephototools.com"
+        target="_blank"
+        rel="noreferrer"
+      >
+        More free tools →
+      </a>
       <div className="site-intro-copy">
         <div className="brand-mark" aria-hidden="true">
           <img src={logoUrl} alt="" />
@@ -230,14 +238,6 @@ function RouteIntro({
             </div>
           ) : null}
         </div>
-        <a
-          className="tool-switch-button tool-switch-link"
-          href="https://simplephototools.com"
-          target="_blank"
-          rel="noreferrer"
-        >
-          More free tools
-        </a>
       </div>
     </section>
   );
