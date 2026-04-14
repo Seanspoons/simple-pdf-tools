@@ -94,6 +94,7 @@ export function MergePdfTool() {
   const inputRef = useRef<HTMLInputElement>(null);
   const cardRefs = useRef(new Map<string, HTMLElement>());
   const previousPositionsRef = useRef(new Map<string, DOMRect>());
+  const previewJobsRef = useRef(new Set<string>());
   const didDropRef = useRef(false);
   const dragPreviewRef = useRef<HTMLElement | null>(null);
   const draggedIdRef = useRef<string | null>(null);
@@ -153,6 +154,7 @@ export function MergePdfTool() {
   useEffect(() => {
     return () => {
       dragPreviewRef.current?.remove();
+      previewJobsRef.current.clear();
       setFiles((current) => {
         current.forEach((item) => {
           if (item.previewUrl) {
@@ -165,14 +167,16 @@ export function MergePdfTool() {
   }, []);
 
   useEffect(() => {
-    const pendingItems = files.filter((item) => item.previewStatus === 'idle');
+    const pendingItems = files.filter(
+      (item) => item.previewStatus === 'idle' && !previewJobsRef.current.has(item.id)
+    );
     if (pendingItems.length === 0) {
       return;
     }
 
-    let isCancelled = false;
-
     pendingItems.forEach((item) => {
+      previewJobsRef.current.add(item.id);
+
       setFiles((current) =>
         current.map((entry) =>
           entry.id === item.id ? { ...entry, previewStatus: 'loading' } : entry
@@ -181,10 +185,6 @@ export function MergePdfTool() {
 
       void renderPdfPreview(item.file)
         .then(({ previewUrl, pageCount }) => {
-          if (isCancelled) {
-            return;
-          }
-
           setFiles((current) =>
             current.map((entry) =>
               entry.id === item.id
@@ -197,12 +197,9 @@ export function MergePdfTool() {
                 : entry
             )
           );
+          previewJobsRef.current.delete(item.id);
         })
         .catch(() => {
-          if (isCancelled) {
-            return;
-          }
-
           setFiles((current) =>
             current.map((entry) =>
               entry.id === item.id
@@ -213,12 +210,9 @@ export function MergePdfTool() {
                 : entry
             )
           );
+          previewJobsRef.current.delete(item.id);
         });
     });
-
-    return () => {
-      isCancelled = true;
-    };
   }, [files]);
 
   useLayoutEffect(() => {
