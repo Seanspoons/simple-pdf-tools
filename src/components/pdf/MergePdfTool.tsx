@@ -1,4 +1,4 @@
-import { ChangeEvent, DragEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { ChangeEvent, DragEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ConfirmModal } from '../ConfirmModal';
 import { FloatingMessage } from '../FloatingMessage';
 import { triggerDownload } from '../../utils/exportImage';
@@ -85,6 +85,8 @@ async function renderPdfPreview(file: File) {
 
 export function MergePdfTool() {
   const inputRef = useRef<HTMLInputElement>(null);
+  const cardRefs = useRef(new Map<string, HTMLElement>());
+  const previousPositionsRef = useRef(new Map<string, DOMRect>());
   const [files, setFiles] = useState<MergeItem[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
@@ -92,6 +94,7 @@ export function MergePdfTool() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [targetId, setTargetId] = useState<string | null>(null);
 
   const totalSize = useMemo(
     () => files.reduce((sum, item) => sum + item.file.size, 0),
@@ -176,6 +179,39 @@ export function MergePdfTool() {
     };
   }, [files]);
 
+  useLayoutEffect(() => {
+    const nextPositions = new Map<string, DOMRect>();
+
+    files.forEach((item) => {
+      const node = cardRefs.current.get(item.id);
+      if (!node) {
+        return;
+      }
+
+      const nextBox = node.getBoundingClientRect();
+      const previousBox = previousPositionsRef.current.get(item.id);
+
+      if (previousBox) {
+        const deltaX = previousBox.left - nextBox.left;
+        const deltaY = previousBox.top - nextBox.top;
+
+        if (deltaX !== 0 || deltaY !== 0) {
+          node.style.transition = 'none';
+          node.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+
+          requestAnimationFrame(() => {
+            node.style.transition = 'transform 220ms ease, box-shadow 140ms ease, border-color 140ms ease';
+            node.style.transform = '';
+          });
+        }
+      }
+
+      nextPositions.set(item.id, nextBox);
+    });
+
+    previousPositionsRef.current = nextPositions;
+  }, [files]);
+
   function appendFiles(incoming: FileList | null) {
     if (!incoming) {
       return;
@@ -250,6 +286,7 @@ export function MergePdfTool() {
 
   function handleCardDragStart(itemId: string) {
     setDraggedId(itemId);
+    setTargetId(itemId);
   }
 
   function handleCardDragEnter(targetId: string) {
@@ -267,6 +304,8 @@ export function MergePdfTool() {
 
       return moveItem(current, fromIndex, toIndex);
     });
+
+    setTargetId(targetId);
   }
 
   async function runMerge() {
@@ -315,6 +354,7 @@ export function MergePdfTool() {
       return [];
     });
     setDraggedId(null);
+    setTargetId(null);
     setStatusMessage('Ready for another merge.');
     setErrorMessage(null);
   }
@@ -412,22 +452,32 @@ export function MergePdfTool() {
 
           {files.length > 0 ? (
             <div className="merge-arrange-grid">
-              {files.map((item, index) => (
-                <article
-                  key={item.id}
-                  className={`thumb-card merge-thumb-card ${draggedId === item.id ? 'is-dragging' : ''}`}
-                  draggable={!isBusy}
-                  onDragStart={(event) => {
-                    event.dataTransfer.effectAllowed = 'move';
-                    handleCardDragStart(item.id);
-                  }}
+                {files.map((item, index) => (
+                  <article
+                    key={item.id}
+                    ref={(node) => {
+                      if (node) {
+                        cardRefs.current.set(item.id, node);
+                      } else {
+                        cardRefs.current.delete(item.id);
+                      }
+                    }}
+                    className={`thumb-card merge-thumb-card ${draggedId === item.id ? 'is-dragging' : ''} ${
+                      targetId === item.id && draggedId !== item.id ? 'is-drop-target' : ''
+                    }`}
+                    draggable={!isBusy}
+                    onDragStart={(event) => {
+                      event.dataTransfer.effectAllowed = 'move';
+                      handleCardDragStart(item.id);
+                    }}
                   onDragEnter={() => handleCardDragEnter(item.id)}
-                  onDragOver={(event) => event.preventDefault()}
-                  onDragEnd={() => {
-                    setDraggedId(null);
-                    setStatusMessage('Updated the merge order.');
-                  }}
-                >
+                    onDragOver={(event) => event.preventDefault()}
+                    onDragEnd={() => {
+                      setDraggedId(null);
+                      setTargetId(null);
+                      setStatusMessage('Updated the merge order.');
+                    }}
+                  >
                   <button
                     type="button"
                     className="thumb-remove-button"

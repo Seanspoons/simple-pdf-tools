@@ -543,10 +543,30 @@ select:disabled {
 .merge-arrange-grid .thumb-card {
   cursor: grab;
   padding: 8px;
+  will-change: transform;
+  transition:
+    transform 220ms cubic-bezier(0.2, 0.9, 0.22, 1),
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease,
+    opacity 160ms ease;
 }
 
 .merge-arrange-grid .thumb-card.is-dragging {
   cursor: grabbing;
+  opacity: 0.82;
+  border-color: rgba(122, 45, 42, 0.32);
+  box-shadow:
+    0 18px 32px rgba(58, 33, 24, 0.16),
+    0 0 0 1px rgba(122, 45, 42, 0.12);
+}
+
+.merge-arrange-grid .thumb-card.is-drop-target {
+  border-color: rgba(122, 45, 42, 0.78);
+  background: #fff8f5;
+  box-shadow:
+    0 0 0 2px rgba(122, 45, 42, 0.2),
+    inset 0 0 0 1px rgba(122, 45, 42, 0.12);
 }
 
 .merge-arrange-grid {
