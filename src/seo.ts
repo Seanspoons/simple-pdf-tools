@@ -6,18 +6,18 @@ type RouteSeo = {
   imageAlt: string;
 };
 
-const DEFAULT_TITLE = 'Simple Photo Tools';
+const DEFAULT_TITLE = 'Simple PDF Tools';
 const DEFAULT_DESCRIPTION =
-  'Free browser-based photo tools for watermarking, collages, and image conversion, with no uploads to our server.';
+  'Free browser-based PDF tools for merging, splitting, and organizing documents with no uploads to our server.';
 
 export const ROUTE_SEO: Record<string, RouteSeo> = {
   '/': {
-    title: 'Simple Photo Tools | Free Browser-Based Photo Editing and Utility Tools',
+    title: 'Simple PDF Tools | Free Browser-Based PDF Editing and Utility Tools',
     description:
-      'Free browser-based photo tools for watermarking, collages, resizing, compression, and image conversion, with no uploads, no accounts, and no backend.',
+      'Free browser-based PDF tools for merging, splitting, rotating, and organizing documents, with no uploads, no accounts, and no backend.',
     canonicalPath: '/',
-    image: 'https://simplephototools.com/og-home.png',
-    imageAlt: 'Simple Photo Tools homepage preview'
+    image: 'https://simplepdftools.com/og-home.png',
+    imageAlt: 'Simple PDF Tools homepage preview'
   },
   '/watermarker': {
     title: 'Photo Watermarker | Add Text, Logo, or Proof Watermarks in Your Browser',
@@ -197,10 +197,10 @@ export function applyRouteSeo(route: string) {
     title: DEFAULT_TITLE,
     description: DEFAULT_DESCRIPTION,
     canonicalPath: '/',
-    image: 'https://simplephototools.com/og-home.png',
-    imageAlt: 'Simple Photo Tools homepage preview'
+    image: 'https://simplepdftools.com/og-home.png',
+    imageAlt: 'Simple PDF Tools homepage preview'
   };
-  const url = `https://simplephototools.com${seo.canonicalPath}`;
+  const url = `https://simplepdftools.com${seo.canonicalPath}`;
 
   document.title = seo.title;
 

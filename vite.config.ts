@@ -40,11 +40,11 @@ export default defineConfig(() => {
         registerType: 'autoUpdate',
         includeAssets: ['icon.svg', 'apple-touch-icon.png', 'masked-icon.svg'],
         manifest: {
-          name: 'Simple Photo Tools',
-          short_name: 'Photo Tools',
-          description: 'Free browser-based photo tools for watermarking, collages, and more.',
-          theme_color: '#f4efe6',
-          background_color: '#f4efe6',
+          name: 'Simple PDF Tools',
+          short_name: 'PDF Tools',
+          description: 'Free browser-based PDF tools for merging, splitting, and organizing documents.',
+          theme_color: '#f2f4fa',
+          background_color: '#f2f4fa',
           display: 'standalone',
           start_url: base,
           icons: [

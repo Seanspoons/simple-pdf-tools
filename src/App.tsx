@@ -262,161 +262,161 @@ function ToolIcon({ kind }: { kind: ToolCard['icon'] }) {
             <path
               d="M44 14H28C20.268 14 14 20.268 14 28V44C14 51.732 20.268 58 28 58H44C51.732 58 58 51.732 58 44V28C58 20.268 51.732 14 44 14Z"
               fill="white"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="2"
             />
             <path
               d="M23 25C24.1046 25 25 24.1046 25 23C25 21.8954 24.1046 21 23 21C21.8954 21 21 21.8954 21 23C21 24.1046 21.8954 25 23 25Z"
-              fill="#D9A24D"
+              fill="#D96A4D"
               fillOpacity="0.35"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="1.5"
             />
             <path
               d="M20 33C21.1046 33 22 32.1046 22 31C22 29.8954 21.1046 29 20 29C18.8954 29 18 29.8954 18 31C18 32.1046 18.8954 33 20 33Z"
-              fill="#D9A24D"
+              fill="#D96A4D"
               fillOpacity="0.35"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="1.5"
             />
             <path
               d="M29 30C30.1046 30 31 29.1046 31 28C31 26.8954 30.1046 26 29 26C27.8954 26 27 26.8954 27 28C27 29.1046 27.8954 30 29 30Z"
-              fill="#D9A24D"
+              fill="#D96A4D"
               fillOpacity="0.35"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="1.5"
             />
             <path
               d="M31 22C32.1046 22 33 21.1046 33 20C33 18.8954 32.1046 18 31 18C29.8954 18 29 18.8954 29 20C29 21.1046 29.8954 22 31 22Z"
-              fill="#D9A24D"
+              fill="#D96A4D"
               fillOpacity="0.35"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="1.5"
             />
             <path
               d="M40 22C41.1046 22 42 21.1046 42 20C42 18.8954 41.1046 18 40 18C38.8954 18 38 18.8954 38 20C38 21.1046 38.8954 22 40 22Z"
-              fill="#D9A24D"
+              fill="#D96A4D"
               fillOpacity="0.35"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="1.5"
             />
             <path
               d="M38 29C39.1046 29 40 28.1046 40 27C40 25.8954 39.1046 25 38 25C36.8954 25 36 25.8954 36 27C36 28.1046 36.8954 29 38 29Z"
-              fill="#D9A24D"
+              fill="#D96A4D"
               fillOpacity="0.35"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="1.5"
             />
             <path
               d="M34 38C35.1046 38 36 37.1046 36 36C36 34.8954 35.1046 34 34 34C32.8954 34 32 34.8954 32 36C32 37.1046 32.8954 38 34 38Z"
-              fill="#D9A24D"
+              fill="#D96A4D"
               fillOpacity="0.35"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="1.5"
             />
             <path
               d="M26 39C27.1046 39 28 38.1046 28 37C28 35.8954 27.1046 35 26 35C24.8954 35 24 35.8954 24 37C24 38.1046 24.8954 39 26 39Z"
-              fill="#D9A24D"
+              fill="#D96A4D"
               fillOpacity="0.35"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="1.5"
             />
             <path
               d="M19 44C20.1046 44 21 43.1046 21 42C21 40.8954 20.1046 40 19 40C17.8954 40 17 40.8954 17 42C17 43.1046 17.8954 44 19 44Z"
-              fill="#D9A24D"
+              fill="#D96A4D"
               fillOpacity="0.35"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="1.5"
             />
             <path
               d="M23 52C24.1046 52 25 51.1046 25 50C25 48.8954 24.1046 48 23 48C21.8954 48 21 48.8954 21 50C21 51.1046 21.8954 52 23 52Z"
-              fill="#D9A24D"
+              fill="#D96A4D"
               fillOpacity="0.35"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="1.5"
             />
             <path
               d="M29 47C30.1046 47 31 46.1046 31 45C31 43.8954 30.1046 43 29 43C27.8954 43 27 43.8954 27 45C27 46.1046 27.8954 47 29 47Z"
-              fill="#D9A24D"
+              fill="#D96A4D"
               fillOpacity="0.35"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="1.5"
             />
             <path
               d="M31 55C32.1046 55 33 54.1046 33 53C33 51.8954 32.1046 51 31 51C29.8954 51 29 51.8954 29 53C29 54.1046 29.8954 55 31 55Z"
-              fill="#D9A24D"
+              fill="#D96A4D"
               fillOpacity="0.35"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="1.5"
             />
             <path
               d="M37 46C38.1046 46 39 45.1046 39 44C39 42.8954 38.1046 42 37 42C35.8954 42 35 42.8954 35 44C35 45.1046 35.8954 46 37 46Z"
-              fill="#D9A24D"
+              fill="#D96A4D"
               fillOpacity="0.35"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="1.5"
             />
             <path
               d="M40 54C41.1046 54 42 53.1046 42 52C42 50.8954 41.1046 50 40 50C38.8954 50 38 50.8954 38 52C38 53.1046 38.8954 54 40 54Z"
-              fill="#D9A24D"
+              fill="#D96A4D"
               fillOpacity="0.35"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="1.5"
             />
             <path
               d="M48 51C49.1046 51 50 50.1046 50 49C50 47.8954 49.1046 47 48 47C46.8954 47 46 47.8954 46 49C46 50.1046 46.8954 51 48 51Z"
-              fill="#D9A24D"
+              fill="#D96A4D"
               fillOpacity="0.35"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="1.5"
             />
             <path
               d="M44 44C45.1046 44 46 43.1046 46 42C46 40.8954 45.1046 40 44 40C42.8954 40 42 40.8954 42 42C42 43.1046 42.8954 44 44 44Z"
-              fill="#D9A24D"
+              fill="#D96A4D"
               fillOpacity="0.35"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="1.5"
             />
             <path
               d="M42 37C43.1046 37 44 36.1046 44 35C44 33.8954 43.1046 33 42 33C40.8954 33 40 33.8954 40 35C40 36.1046 40.8954 37 42 37Z"
-              fill="#D9A24D"
+              fill="#D96A4D"
               fillOpacity="0.35"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="1.5"
             />
             <path
               d="M46 29C47.1046 29 48 28.1046 48 27C48 25.8954 47.1046 25 46 25C44.8954 25 44 25.8954 44 27C44 28.1046 44.8954 29 46 29Z"
-              fill="#D9A24D"
+              fill="#D96A4D"
               fillOpacity="0.35"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="1.5"
             />
             <path
               d="M48 22C49.1046 22 50 21.1046 50 20C50 18.8954 49.1046 18 48 18C46.8954 18 46 18.8954 46 20C46 21.1046 46.8954 22 48 22Z"
-              fill="#D9A24D"
+              fill="#D96A4D"
               fillOpacity="0.35"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="1.5"
             />
             <path
               d="M53 29C54.1046 29 55 28.1046 55 27C55 25.8954 54.1046 25 53 25C51.8954 25 51 25.8954 51 27C51 28.1046 51.8954 29 53 29Z"
-              fill="#D9A24D"
+              fill="#D96A4D"
               fillOpacity="0.35"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="1.5"
             />
             <path
               d="M50 36C51.1046 36 52 35.1046 52 34C52 32.8954 51.1046 32 50 32C48.8954 32 48 32.8954 48 34C48 35.1046 48.8954 36 50 36Z"
-              fill="#D9A24D"
+              fill="#D96A4D"
               fillOpacity="0.35"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="1.5"
             />
             <path
               d="M53 44C54.1046 44 55 43.1046 55 42C55 40.8954 54.1046 40 53 40C51.8954 40 51 40.8954 51 42C51 43.1046 51.8954 44 53 44Z"
-              fill="#D9A24D"
+              fill="#D96A4D"
               fillOpacity="0.35"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="1.5"
             />
           </>
@@ -509,7 +509,7 @@ function ToolIcon({ kind }: { kind: ToolCard['icon'] }) {
             <path
               d="M44 12H28C19.1634 12 12 19.1634 12 28V44C12 52.8366 19.1634 60 28 60H44C52.8366 60 60 52.8366 60 44V28C60 19.1634 52.8366 12 44 12Z"
               fill="white"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="2"
             />
             <rect
@@ -518,70 +518,70 @@ function ToolIcon({ kind }: { kind: ToolCard['icon'] }) {
               width="27.5"
               height="27.5"
               rx="4.25"
-              fill="#D9A24D"
+              fill="#D96A4D"
               fillOpacity="0.35"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="1.5"
             />
             <path
               d="M24 29.813L28.2605 25.0783"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeOpacity="0.65"
               strokeWidth="2.4"
               strokeLinecap="round"
             />
             <path
               d="M25 34L33.2605 25.0783"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeOpacity="0.65"
               strokeWidth="2.4"
               strokeLinecap="round"
             />
             <path
               d="M25 39.813L38 25"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeOpacity="0.65"
               strokeWidth="2.4"
               strokeLinecap="round"
             />
             <path
               d="M29 47.0518L46 27"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeOpacity="0.65"
               strokeWidth="2.4"
               strokeLinecap="round"
             />
             <path
               d="M34 47.3639L47 32"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeOpacity="0.65"
               strokeWidth="2.4"
               strokeLinecap="round"
             />
             <path
               d="M39 47.6025L47 38"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeOpacity="0.65"
               strokeWidth="2.4"
               strokeLinecap="round"
             />
             <path
               d="M44 47.7494L47 44"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeOpacity="0.65"
               strokeWidth="2.4"
               strokeLinecap="round"
             />
             <path
               d="M25 46L43 25.2388"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeOpacity="0.65"
               strokeWidth="2.4"
               strokeLinecap="round"
             />
             <path
               d="M22 22L50 50"
-              stroke="#D9A24D"
+              stroke="#D96A4D"
               strokeWidth="2.4"
               strokeLinecap="round"
             />
@@ -635,16 +635,16 @@ function RouteIntro({
           <img src={logoUrl} alt="" />
         </div>
         <div>
-          <p className="eyebrow">Simple Photo Tools</p>
-          <h1>{isHome ? 'Simple photo tools that stay on your device.' : activeLabel}</h1>
+          <p className="eyebrow">Simple PDF Tools</p>
+          <h1>{isHome ? 'Simple PDF tools that stay on your device.' : activeLabel}</h1>
           <p className="hero-copy">
             {isHome
-              ? 'Use free online photo tools right in your browser for watermarking, collages, resizing, conversion, compression, cropping, and more, with no uploads to our server.'
-              : 'Part of Simple Photo Tools: private photo tools that run right in your browser.'}
+              ? 'Use free online PDF tools right in your browser for merging, splitting, rotating, extracting, and more, with no uploads to our server.'
+              : 'Part of Simple PDF Tools: private document tools that run right in your browser.'}
           </p>
         </div>
       </div>
-      <div className="tool-switcher tool-switcher-suite" role="navigation" aria-label="Simple Photo Tools">
+      <div className="tool-switcher tool-switcher-suite" role="navigation" aria-label="Simple PDF Tools">
         <button
           type="button"
           className={`tool-switch-button ${route === '/' ? 'is-active' : ''}`}
@@ -684,6 +684,14 @@ function RouteIntro({
             </div>
           ) : null}
         </div>
+        <a
+          className="tool-switch-button tool-switch-link"
+          href="https://simplephototools.com"
+          target="_blank"
+          rel="noreferrer"
+        >
+          More free tools
+        </a>
       </div>
     </section>
   );
@@ -723,9 +731,9 @@ function HomePage({ onNavigate }: { onNavigate: (path: AppRoute) => void }) {
           <div className="coming-soon-summary-body">
             <div className="coming-soon-summary-header">
               <p className="eyebrow">On The Roadmap</p>
-              <h2>More photo tools are on the way.</h2>
+              <h2>More PDF tools are on the way.</h2>
               <p className="coming-soon-summary-copy">
-                A preview of the next tools planned for Simple Photo Tools.
+                A preview of the next tools planned for Simple PDF Tools.
               </p>
             </div>
             <div className="coming-soon-preview-grid">
@@ -762,7 +770,7 @@ function ComingSoonPage({
         </div>
       </div>
       <p className="hero-copy">
-        This tool is planned for Simple Photo Tools, but it is not ready yet.
+        This tool is planned for Simple PDF Tools, but it is not ready yet.
       </p>
       <div className="coming-soon-actions">
         <button type="button" className="primary-button" onClick={() => onNavigate('/watermarker')}>
@@ -1058,15 +1066,15 @@ export default function App() {
           <div className="site-footer-brand">
             <img src={logoUrl} alt="" aria-hidden="true" />
             <div>
-              <p className="site-footer-title">Simple Photo Tools</p>
+              <p className="site-footer-title">Simple PDF Tools</p>
               <p className="site-footer-copy">
-                Free browser-based photo tools for editing, formatting, and privacy, with no
+                Free browser-based PDF tools for document cleanup, combining, and privacy, with no
                 accounts and no uploads to our server.
               </p>
             </div>
           </div>
           <p className="site-footer-meta">
-            © 2026 Simple Photo Tools. Your edits stay on your device.
+            © 2026 Simple PDF Tools. Your files stay on your device.
           </p>
         </div>
       </footer>
