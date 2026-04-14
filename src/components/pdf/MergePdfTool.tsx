@@ -46,41 +46,48 @@ function moveItem<T>(items: T[], fromIndex: number, toIndex: number) {
 }
 
 async function renderPdfPreview(file: File) {
-  const [{ getDocument, GlobalWorkerOptions }, workerModule] = await Promise.all([
-    import('pdfjs-dist/legacy/build/pdf.mjs'),
-    import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url')
-  ]);
-
-  GlobalWorkerOptions.workerSrc = workerModule.default;
+  const { getDocument, PDFWorker } = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  const worker = new PDFWorker();
 
   const bytes = new Uint8Array(await file.arrayBuffer());
-  const pdf = await getDocument({ data: bytes }).promise;
-  const page = await pdf.getPage(1);
-  const viewport = page.getViewport({ scale: 1 });
-  const scale = Math.min(220 / viewport.width, 280 / viewport.height, 1.4);
-  const scaledViewport = page.getViewport({ scale });
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('2d');
-
-  if (!context) {
-    throw new Error('The browser could not prepare a PDF preview.');
-  }
-
-  canvas.width = Math.ceil(scaledViewport.width);
-  canvas.height = Math.ceil(scaledViewport.height);
-  context.fillStyle = '#ffffff';
-  context.fillRect(0, 0, canvas.width, canvas.height);
-
-  await page.render({
-    canvas,
-    canvasContext: context,
-    viewport: scaledViewport
+  const pdf = await getDocument({
+    data: bytes,
+    worker,
+    useWorkerFetch: false,
+    isEvalSupported: false
   }).promise;
 
-  return {
-    previewUrl: canvas.toDataURL('image/png'),
-    pageCount: pdf.numPages
-  };
+  try {
+    const page = await pdf.getPage(1);
+    const viewport = page.getViewport({ scale: 1 });
+    const scale = Math.min(240 / viewport.width, 320 / viewport.height, 1.5);
+    const scaledViewport = page.getViewport({ scale });
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+
+    if (!context) {
+      throw new Error('The browser could not prepare a PDF preview.');
+    }
+
+    canvas.width = Math.ceil(scaledViewport.width);
+    canvas.height = Math.ceil(scaledViewport.height);
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    await page.render({
+      canvas,
+      canvasContext: context,
+      viewport: scaledViewport
+    }).promise;
+
+    return {
+      previewUrl: canvas.toDataURL('image/png'),
+      pageCount: pdf.numPages
+    };
+  } finally {
+    await pdf.destroy();
+    worker.destroy();
+  }
 }
 
 export function MergePdfTool() {

@@ -572,12 +572,12 @@ select:disabled {
 }
 
 .merge-arrange-grid .thumb-card {
-  flex: 0 0 120px;
+  flex: 0 0 136px;
 }
 
 .merge-drop-slot {
-  flex: 0 0 120px;
-  min-height: 188px;
+  flex: 0 0 136px;
+  min-height: 212px;
   border-radius: 18px;
   border: 2px dotted rgba(122, 45, 42, 0.72);
   background:
