@@ -102,6 +102,18 @@ function deserializeRangeRows(value: string) {
   });
 }
 
+function clampPageValue(value: string, pageCount: number | null) {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed)) {
+    return pageCount && pageCount > 0 ? '1' : '1';
+  }
+
+  const minimum = 1;
+  const maximum = pageCount && pageCount > 0 ? pageCount : Number.MAX_SAFE_INTEGER;
+  return String(Math.min(Math.max(Math.round(parsed), minimum), maximum));
+}
+
 function SplitModeIcon({ mode }: { mode: SplitMode }) {
   const iconSrc =
     mode === 'selected-pages'
@@ -283,9 +295,32 @@ export function SplitPdfTool() {
     setPages((current) => current.map((page) => ({ ...page, selected: false })));
   }
 
+  function handleModeChange(nextMode: SplitMode) {
+    if (nextMode !== 'selected-pages') {
+      clearSelectedPages();
+    }
+
+    setMode(nextMode);
+  }
+
   function updateRangeRow(id: string, field: 'start' | 'end', value: string) {
     setRangeRows((current) =>
       current.map((row) => (row.id === id ? { ...row, [field]: value } : row))
+    );
+  }
+
+  function normalizeRangeRowValue(id: string, field: 'start' | 'end') {
+    setRangeRows((current) =>
+      current.map((row) => {
+        if (row.id !== id) {
+          return row;
+        }
+
+        return {
+          ...row,
+          [field]: clampPageValue(row[field], pageCount)
+        };
+      })
     );
   }
 
@@ -456,21 +491,21 @@ export function SplitPdfTool() {
           </div>
         </div>
         <div className="split-mode-grid">
-          <button type="button" className={`choice-card ${mode === 'selected-pages' ? 'is-selected' : ''}`} onClick={() => setMode('selected-pages')}>
+          <button type="button" className={`choice-card ${mode === 'selected-pages' ? 'is-selected' : ''}`} onClick={() => handleModeChange('selected-pages')}>
             <SplitModeIcon mode="selected-pages" />
             <span className="choice-card-body">
               <span className="choice-card-title">Extract selected pages</span>
               <span className="choice-card-copy">Choose the pages you want in one new PDF.</span>
             </span>
           </button>
-          <button type="button" className={`choice-card ${mode === 'every-page' ? 'is-selected' : ''}`} onClick={() => setMode('every-page')}>
+          <button type="button" className={`choice-card ${mode === 'every-page' ? 'is-selected' : ''}`} onClick={() => handleModeChange('every-page')}>
             <SplitModeIcon mode="every-page" />
             <span className="choice-card-body">
               <span className="choice-card-title">Split every page</span>
               <span className="choice-card-copy">Create one PDF file for each page.</span>
             </span>
           </button>
-          <button type="button" className={`choice-card ${mode === 'page-ranges' ? 'is-selected' : ''}`} onClick={() => setMode('page-ranges')}>
+          <button type="button" className={`choice-card ${mode === 'page-ranges' ? 'is-selected' : ''}`} onClick={() => handleModeChange('page-ranges')}>
             <SplitModeIcon mode="page-ranges" />
             <span className="choice-card-body">
               <span className="choice-card-title">Split by page ranges</span>
@@ -498,6 +533,7 @@ export function SplitPdfTool() {
                       placeholder="1"
                       value={row.start}
                       onChange={(event) => updateRangeRow(row.id, 'start', event.target.value)}
+                      onBlur={() => normalizeRangeRowValue(row.id, 'start')}
                     />
                   </div>
                   <div className="split-range-field">
@@ -514,6 +550,7 @@ export function SplitPdfTool() {
                       placeholder="3"
                       value={row.end}
                       onChange={(event) => updateRangeRow(row.id, 'end', event.target.value)}
+                      onBlur={() => normalizeRangeRowValue(row.id, 'end')}
                     />
                   </div>
                   {rangeRows.length > 1 ? (
