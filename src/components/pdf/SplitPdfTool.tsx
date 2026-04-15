@@ -114,6 +114,14 @@ function clampPageValue(value: string, pageCount: number | null) {
   return String(Math.min(Math.max(Math.round(parsed), minimum), maximum));
 }
 
+function normalizeRangeRows(rows: SplitRangeRow[], pageCount: number | null) {
+  return rows.map((row) => ({
+    ...row,
+    start: row.start.trim() ? clampPageValue(row.start, pageCount) : '',
+    end: row.end.trim() ? clampPageValue(row.end, pageCount) : ''
+  }));
+}
+
 function SplitModeIcon({ mode }: { mode: SplitMode }) {
   const iconSrc =
     mode === 'selected-pages'
@@ -152,13 +160,23 @@ export function SplitPdfTool() {
 
   const rangesText = useMemo(() => serializeRangeRows(rangeRows), [rangeRows]);
 
+  const normalizedRangeRows = useMemo(
+    () => normalizeRangeRows(rangeRows, pageCount),
+    [pageCount, rangeRows]
+  );
+
+  const normalizedRangesText = useMemo(
+    () => serializeRangeRows(normalizedRangeRows),
+    [normalizedRangeRows]
+  );
+
   const parsedRanges = useMemo(() => {
     if (!pageCount || mode !== 'page-ranges') {
       return { ranges: [], error: null as string | null };
     }
 
-    return parseSplitRanges(rangesText, pageCount);
-  }, [mode, pageCount, rangesText]);
+    return parseSplitRanges(normalizedRangesText, pageCount);
+  }, [mode, pageCount, normalizedRangesText]);
 
   const fileSummary = useMemo(() => {
     if (!file) {
@@ -324,6 +342,10 @@ export function SplitPdfTool() {
     );
   }
 
+  function applyNormalizedRangeRows() {
+    setRangeRows((current) => normalizeRangeRows(current, pageCount));
+  }
+
   function addRangeRow() {
     setRangeRows((current) => [...current, createSplitRangeRow()]);
   }
@@ -392,6 +414,8 @@ export function SplitPdfTool() {
         setErrorMessage(parsedRanges.error);
         return;
       }
+
+      applyNormalizedRangeRows();
 
       const outputs = await Promise.all(
         parsedRanges.ranges.map(async (range) => ({
@@ -470,6 +494,33 @@ export function SplitPdfTool() {
       detail: range.start === range.end ? `Page ${range.start}` : `Pages ${range.start}-${range.end}`
     }));
   }, [file, mode, pageCount, parsedRanges, selectedPages]);
+
+  const rangePreviewGroups = useMemo(() => {
+    if (mode !== 'page-ranges') {
+      return [];
+    }
+
+    return parsedRanges.ranges.map((range, index) => ({
+      key: `${range.start}-${range.end}-${index}`,
+      label: range.start === range.end ? `Range ${index + 1} • Page ${range.start}` : `Range ${index + 1} • Pages ${range.start}-${range.end}`,
+      pages: pages.filter(
+        (page) => page.pageNumber >= range.start && page.pageNumber <= range.end
+      )
+    }));
+  }, [mode, pages, parsedRanges.ranges]);
+
+  const unassignedRangePages = useMemo(() => {
+    if (mode !== 'page-ranges' || parsedRanges.ranges.length === 0) {
+      return [];
+    }
+
+    return pages.filter(
+      (page) =>
+        !parsedRanges.ranges.some(
+          (range) => page.pageNumber >= range.start && page.pageNumber <= range.end
+        )
+    );
+  }, [mode, pages, parsedRanges.ranges]);
 
   const controls = (
     <div className="split-top-grid">
@@ -599,7 +650,63 @@ export function SplitPdfTool() {
         </div>
         {previewStatus === 'loading' ? <div className="preview-placeholder"><p>Loading page previews…</p></div> : null}
         {previewStatus === 'error' ? <div className="preview-placeholder"><p>Preview unavailable.</p></div> : null}
-        {previewStatus === 'ready' ? (
+        {previewStatus === 'ready' && mode === 'page-ranges' ? (
+          <div className="split-range-preview-groups">
+            {rangePreviewGroups.map((group) => (
+              <section key={group.key} className="split-range-preview-group">
+                <div className="split-range-preview-header">
+                  <span className="split-range-preview-badge">{group.label}</span>
+                </div>
+                <div className="split-page-grid">
+                  {group.pages.map((page) => (
+                    <div key={page.pageNumber} className="thumb-card merge-thumb-card split-page-card split-page-card-readonly">
+                      <div className="merge-thumb-preview split-thumb-preview">
+                        {page.previewUrl ? (
+                          <img src={page.previewUrl} alt="" className="thumb-image split-thumb-image" />
+                        ) : (
+                          <div className={`merge-thumb-placeholder merge-thumb-placeholder-${page.previewOrientation}`}>
+                            <span>Preview unavailable</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="thumb-meta">
+                        <span className="thumb-order">Page {page.pageNumber}</span>
+                        <span className="thumb-drag-hint">Included</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ))}
+            {unassignedRangePages.length > 0 ? (
+              <section className="split-range-preview-group split-range-preview-group-muted">
+                <div className="split-range-preview-header">
+                  <span className="split-range-preview-badge">Not in a range</span>
+                </div>
+                <div className="split-page-grid">
+                  {unassignedRangePages.map((page) => (
+                    <div key={page.pageNumber} className="thumb-card merge-thumb-card split-page-card split-page-card-readonly split-page-card-unassigned">
+                      <div className="merge-thumb-preview split-thumb-preview">
+                        {page.previewUrl ? (
+                          <img src={page.previewUrl} alt="" className="thumb-image split-thumb-image" />
+                        ) : (
+                          <div className={`merge-thumb-placeholder merge-thumb-placeholder-${page.previewOrientation}`}>
+                            <span>Preview unavailable</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="thumb-meta">
+                        <span className="thumb-order">Page {page.pageNumber}</span>
+                        <span className="thumb-drag-hint">Excluded</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+          </div>
+        ) : null}
+        {previewStatus === 'ready' && mode !== 'page-ranges' ? (
           <div className="split-page-grid">
             {pages.map((page) => (
               <button
