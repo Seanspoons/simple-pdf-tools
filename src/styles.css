@@ -965,6 +965,10 @@ select:disabled {
 }
 
 @media (max-width: 720px) {
+  .split-range-preview-group-muted {
+    display: none;
+  }
+
   .split-range-row {
     grid-template-columns: 1fr;
   }
