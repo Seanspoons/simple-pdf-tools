@@ -1,4 +1,4 @@
-import { ChangeEvent, CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
+import { CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import {
   DndContext,
   PointerSensor,
@@ -130,7 +130,6 @@ export function MergePdfTool() {
   const cardRefs = useRef(new Map<string, HTMLElement>());
   const previewJobsRef = useRef(new Set<string>());
   const [files, setFiles] = useState<MergeItem[]>([]);
-  const [, setIsDragging] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
