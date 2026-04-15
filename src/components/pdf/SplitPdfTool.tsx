@@ -632,7 +632,7 @@ export function SplitPdfTool() {
         <div className="panel-heading">
           <div>
             <p className="eyebrow">Step 3</p>
-            <h2>Document pages</h2>
+            <h2>Preview pages</h2>
           </div>
           <div className="panel-heading-actions">
             {pageCount ? <span className="dimension-badge">{pageCount} pages</span> : null}
