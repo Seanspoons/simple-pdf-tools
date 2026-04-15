@@ -4,11 +4,13 @@ Simple PDF Tools is a privacy-first web app for quick PDF utilities that run ent
 
 Live site: https://simplepdftools.app
 
-Current tool:
+Current tools:
+
 - Merge PDF
+- Split PDF
 
 Planned tools:
-- Split PDF
+
 - Compress PDF
 - Extract Pages
 - Rotate PDF
@@ -16,17 +18,28 @@ Planned tools:
 ## What it does
 
 ### Merge PDF
+
 - Upload multiple PDF files
-- Reorder files before merging
+- Preview the first page of each file before export
+- Reorder files with drag and drop
+- Rotate files before merging when needed
 - Remove files you do not want included
-- Merge documents locally in the browser
-- Download a single combined PDF
+- Export one merged PDF locally in the browser
+
+### Split PDF
+
+- Upload one PDF and preview its pages directly in the browser
+- Extract selected pages into one new PDF
+- Split every page into separate PDF files
+- Split by page ranges with guided range inputs
+- Review grouped range output before export
+- Export the resulting PDFs locally in the browser
 
 ## Product direction
 
-This repo started as a clone of Simple Photo Tools and is being converted into a sibling product focused on browser-based PDF utilities.
+This project started as a sibling product to Simple Photo Tools and is being built into a broader suite of browser-based PDF utilities.
 
-The current routes are:
+The homepage acts as a simple tool hub, with dedicated routes for each tool:
 
 - `/`
 - `/merge-pdf`
@@ -35,36 +48,30 @@ The current routes are:
 - `/extract-pages`
 - `/rotate-pdf`
 
-The homepage acts as a simple tool hub, with Merge PDF as the first real tool and the rest presented as coming soon.
+Merge PDF and Split PDF are live now. Additional PDF tools will be added over time.
 
 ## Privacy
 
-All PDF processing is intended to happen locally in the browser.
+All PDF processing happens locally in the browser.
 
 - No uploads to our server
 - No accounts
 - No backend required
+- Drafts and preferences stay on the device
 
 ## Tech
 
 - React
 - TypeScript
 - Vite
-- `pdf-lib` for browser-side PDF merging
+- `pdf-lib` for browser-side PDF generation and document assembly
+- `pdfjs-dist` for PDF preview rendering
 - PWA support for offline app-shell usage
-
-## Reusable UI patterns
-
-To keep layout patterns while removing legacy photo tools, the two-column step layout is now preserved as neutral UI primitives:
-
-- `src/components/layout/TwoColumnToolLayout.tsx`
-- `src/styles.css` classes: `tool-two-col-layout`, `tool-main-col`, `tool-side-col`, `tool-sticky-wrap`
-
-These classes are intended for future PDF tools that need a preview/content column and a controls/export column.
 
 ## Running locally
 
 Requirements:
+
 - Node.js 20+
 - npm
 
@@ -85,3 +92,19 @@ Build for production:
 ```bash
 npm run build
 ```
+
+## Notes
+
+- The app works offline after the initial load
+- Merge PDF supports draft restoration, page preview thumbnails, file rotation, and drag-and-drop ordering
+- Split PDF supports selected pages, every-page export, and grouped page-range export
+- Larger PDFs may take longer to preview on lower-memory devices because rendering happens in the browser
+
+## Why I built it
+
+I wanted a fast, simple set of PDF tools that:
+
+- work well on mobile and desktop
+- are easy for non-technical users
+- keep sensitive documents off random servers
+- stay free and lightweight
