@@ -81,3 +81,19 @@ export async function downloadBlobSequence(files: Array<{ blob: Blob; filename: 
     await new Promise((resolve) => window.setTimeout(resolve, 160));
   }
 }
+
+export function buildSelectedPagesFilename(file: File): string {
+  return `${getPdfBaseName(file)}-selected-pages.pdf`;
+}
+
+export function buildSinglePageFilename(file: File, pageNumber: number): string {
+  return `${getPdfBaseName(file)}-page-${pageNumber}.pdf`;
+}
+
+export function buildRangeFilename(file: File, range: SplitRange): string {
+  if (range.start === range.end) {
+    return buildSinglePageFilename(file, range.start);
+  }
+
+  return `${getPdfBaseName(file)}-pages-${range.start}-${range.end}.pdf`;
+}

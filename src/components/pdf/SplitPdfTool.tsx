@@ -5,9 +5,11 @@ import { TwoColumnToolLayout } from '../layout/TwoColumnToolLayout';
 import { clearToolDraft, loadToolDraft, saveToolDraft } from '../../utils/toolDraftStore';
 import { PdfPagePreview, renderPdfPagePreviews } from '../../utils/pdfPreview';
 import {
+  buildRangeFilename,
+  buildSelectedPagesFilename,
+  buildSinglePageFilename,
   createPdfBlobFromPageNumbers,
   downloadBlobSequence,
-  getPdfBaseName,
   parseSplitRanges
 } from '../../utils/pdfSplit';
 
@@ -212,8 +214,6 @@ export function SplitPdfTool() {
     setErrorMessage(null);
 
     try {
-      const baseName = getPdfBaseName(file);
-
       if (mode === 'selected-pages') {
         if (selectedPages.length === 0) {
           setErrorMessage('Select one or more pages to export.');
@@ -224,7 +224,7 @@ export function SplitPdfTool() {
         await downloadBlobSequence([
           {
             blob,
-            filename: `${baseName}-selected-pages.pdf`
+            filename: buildSelectedPagesFilename(file)
           }
         ]);
         setStatusMessage('Selected pages are ready.');
@@ -235,7 +235,7 @@ export function SplitPdfTool() {
         const outputs = await Promise.all(
           Array.from({ length: pageCount }, async (_, index) => ({
             blob: await createPdfBlobFromPageNumbers(file, [index + 1]),
-            filename: `${baseName}-page-${index + 1}.pdf`
+            filename: buildSinglePageFilename(file, index + 1)
           }))
         );
 
@@ -255,7 +255,7 @@ export function SplitPdfTool() {
             file,
             Array.from({ length: range.end - range.start + 1 }, (_, index) => range.start + index)
           ),
-          filename: `${baseName}-pages-${range.start}-${range.end}.pdf`
+          filename: buildRangeFilename(file, range)
         }))
       );
 
@@ -291,6 +291,41 @@ export function SplitPdfTool() {
 
     return `${parsedRanges.ranges.length} PDF file${parsedRanges.ranges.length === 1 ? '' : 's'} will be created from your page ranges.`;
   }, [file, mode, pageCount, parsedRanges, selectedPages.length]);
+
+  const plannedOutputs = useMemo(() => {
+    if (!file || !pageCount) {
+      return [];
+    }
+
+    if (mode === 'selected-pages') {
+      if (selectedPages.length === 0) {
+        return [];
+      }
+
+      return [
+        {
+          filename: buildSelectedPagesFilename(file),
+          detail: `Pages ${selectedPages.join(', ')}`
+        }
+      ];
+    }
+
+    if (mode === 'every-page') {
+      return Array.from({ length: pageCount }, (_, index) => ({
+        filename: buildSinglePageFilename(file, index + 1),
+        detail: `Page ${index + 1}`
+      }));
+    }
+
+    if (parsedRanges.error) {
+      return [];
+    }
+
+    return parsedRanges.ranges.map((range) => ({
+      filename: buildRangeFilename(file, range),
+      detail: range.start === range.end ? `Page ${range.start}` : `Pages ${range.start}-${range.end}`
+    }));
+  }, [file, mode, pageCount, parsedRanges, selectedPages]);
 
   const controls = (
     <>
@@ -353,6 +388,19 @@ export function SplitPdfTool() {
           <div className="export-preview-shell">
             <p className="helper-text">{fileSummary}</p>
             <p className="helper-text">{exportSummary}</p>
+            {plannedOutputs.length > 0 ? (
+              <div className="split-output-list">
+                {plannedOutputs.slice(0, 6).map((output) => (
+                  <div key={output.filename} className="split-output-item">
+                    <span className="split-output-name">{output.filename}</span>
+                    <span className="split-output-detail">{output.detail}</span>
+                  </div>
+                ))}
+                {plannedOutputs.length > 6 ? (
+                  <p className="helper-text">And {plannedOutputs.length - 6} more output files.</p>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
         <div className="panel-heading-actions">

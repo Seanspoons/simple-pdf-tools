@@ -795,6 +795,32 @@ select:disabled {
   min-height: 132px;
 }
 
+.split-output-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.split-output-item {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: #fcf8f3;
+}
+
+.split-output-name {
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.split-output-detail {
+  color: var(--text-soft);
+  font-size: 0.84rem;
+}
+
 .suite-tool-icon {
   width: 74px;
   height: 74px;
