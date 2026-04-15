@@ -22,6 +22,12 @@ type SplitPage = PdfPagePreview & {
   selected: boolean;
 };
 
+type SplitRangeRow = {
+  id: string;
+  start: string;
+  end: string;
+};
+
 type StoredSplitDraft = {
   file: File;
   mode: SplitMode;
@@ -49,6 +55,53 @@ function sortNumbersAscending(values: number[]) {
   return [...values].sort((a, b) => a - b);
 }
 
+function createRowId() {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `range-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function createSplitRangeRow(start = '', end = ''): SplitRangeRow {
+  return {
+    id: createRowId(),
+    start,
+    end
+  };
+}
+
+function serializeRangeRows(rows: SplitRangeRow[]) {
+  return rows
+    .map((row) => {
+      const start = row.start.trim();
+      const end = row.end.trim();
+      if (!start && !end) {
+        return '';
+      }
+
+      return end ? `${start}-${end}` : start;
+    })
+    .filter(Boolean)
+    .join('\n');
+}
+
+function deserializeRangeRows(value: string) {
+  const tokens = value
+    .split(/[\n,]+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (tokens.length === 0) {
+    return [createSplitRangeRow('1', '2')];
+  }
+
+  return tokens.map((token) => {
+    const [start = '', end = ''] = token.split('-').map((part) => part.trim());
+    return createSplitRangeRow(start, end || start);
+  });
+}
+
 function SplitModeIcon({ mode }: { mode: SplitMode }) {
   const iconSrc =
     mode === 'selected-pages'
@@ -69,7 +122,10 @@ export function SplitPdfTool() {
   const [file, setFile] = useState<File | null>(null);
   const [mode, setMode] = useState<SplitMode>('selected-pages');
   const [pages, setPages] = useState<SplitPage[]>([]);
-  const [rangesText, setRangesText] = useState('1-2\n3-4');
+  const [rangeRows, setRangeRows] = useState<SplitRangeRow[]>([
+    createSplitRangeRow('1', '2'),
+    createSplitRangeRow('3', '4')
+  ]);
   const [pageCount, setPageCount] = useState<number | null>(null);
   const [previewStatus, setPreviewStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [isBusy, setIsBusy] = useState(false);
@@ -81,6 +137,8 @@ export function SplitPdfTool() {
     () => sortNumbersAscending(pages.filter((page) => page.selected).map((page) => page.pageNumber)),
     [pages]
   );
+
+  const rangesText = useMemo(() => serializeRangeRows(rangeRows), [rangeRows]);
 
   const parsedRanges = useMemo(() => {
     if (!pageCount || mode !== 'page-ranges') {
@@ -110,7 +168,7 @@ export function SplitPdfTool() {
 
         setFile(draft.file);
         setMode(draft.mode);
-        setRangesText(draft.rangesText);
+        setRangeRows(deserializeRangeRows(draft.rangesText));
         setStatusMessage('Restored your last split setup.');
 
         // Selection is applied after previews load.
@@ -225,12 +283,28 @@ export function SplitPdfTool() {
     setPages((current) => current.map((page) => ({ ...page, selected: false })));
   }
 
+  function updateRangeRow(id: string, field: 'start' | 'end', value: string) {
+    setRangeRows((current) =>
+      current.map((row) => (row.id === id ? { ...row, [field]: value } : row))
+    );
+  }
+
+  function addRangeRow() {
+    setRangeRows((current) => [...current, createSplitRangeRow()]);
+  }
+
+  function removeRangeRow(id: string) {
+    setRangeRows((current) =>
+      current.length > 1 ? current.filter((row) => row.id !== id) : [createSplitRangeRow()]
+    );
+  }
+
   function handleStartNewSplit() {
     pendingSelectionRef.current = null;
     setFile(null);
     setMode('selected-pages');
     setPages([]);
-    setRangesText('1-2\n3-4');
+    setRangeRows([createSplitRangeRow('1', '2'), createSplitRangeRow('3', '4')]);
     setPageCount(null);
     setPreviewStatus('idle');
     setConfirmAction(null);
@@ -406,16 +480,59 @@ export function SplitPdfTool() {
         </div>
         {mode === 'page-ranges' ? (
           <div className="split-range-editor">
-            <label className="field-label" htmlFor="split-ranges">Page ranges</label>
-            <textarea
-              id="split-ranges"
-              className="text-input split-range-input"
-              value={rangesText}
-              onChange={(event) => setRangesText(event.target.value)}
-              rows={5}
-              placeholder={'1-3\n4-6\n7-10'}
-            />
-            <p className="helper-text">Add one range per line, or separate them with commas.</p>
+            <span className="field-label">Page ranges</span>
+            <div className="split-range-list">
+              {rangeRows.map((row, index) => (
+                <div key={row.id} className="split-range-row">
+                  <div className="split-range-field">
+                    <label className="helper-text split-range-label" htmlFor={`split-range-start-${row.id}`}>
+                      From page
+                    </label>
+                    <input
+                      id={`split-range-start-${row.id}`}
+                      className="text-input split-range-number-input"
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      step={1}
+                      placeholder="1"
+                      value={row.start}
+                      onChange={(event) => updateRangeRow(row.id, 'start', event.target.value)}
+                    />
+                  </div>
+                  <div className="split-range-field">
+                    <label className="helper-text split-range-label" htmlFor={`split-range-end-${row.id}`}>
+                      To page
+                    </label>
+                    <input
+                      id={`split-range-end-${row.id}`}
+                      className="text-input split-range-number-input"
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      step={1}
+                      placeholder="3"
+                      value={row.end}
+                      onChange={(event) => updateRangeRow(row.id, 'end', event.target.value)}
+                    />
+                  </div>
+                  {rangeRows.length > 1 ? (
+                    <button
+                      type="button"
+                      className="ghost-button split-range-remove-button"
+                      onClick={() => removeRangeRow(row.id)}
+                      aria-label={`Remove page range ${index + 1}`}
+                    >
+                      Remove
+                    </button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+            <button type="button" className="ghost-button split-range-add-button" onClick={addRangeRow}>
+              Add Page Range
+            </button>
+            <p className="helper-text">Enter a start and end page for each file you want to create.</p>
           </div>
         ) : null}
       </section>

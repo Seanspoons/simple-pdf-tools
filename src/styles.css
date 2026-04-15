@@ -856,6 +856,27 @@ select:disabled {
   margin-top: 14px;
 }
 
+.split-range-list {
+  display: grid;
+  gap: 12px;
+}
+
+.split-range-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.split-range-field {
+  display: grid;
+  gap: 6px;
+}
+
+.split-range-label {
+  margin: 0;
+}
+
 .field-label {
   font-size: 0.86rem;
   font-weight: 700;
@@ -879,8 +900,29 @@ select:disabled {
   border-color: rgba(122, 45, 42, 0.34);
 }
 
-.split-range-input {
-  min-height: 132px;
+.split-range-number-input {
+  min-height: 52px;
+  resize: none;
+}
+
+.split-range-number-input::-webkit-outer-spin-button,
+.split-range-number-input::-webkit-inner-spin-button {
+  opacity: 1;
+}
+
+.split-range-add-button,
+.split-range-remove-button {
+  justify-content: center;
+}
+
+.split-range-remove-button {
+  min-width: 92px;
+}
+
+@media (max-width: 720px) {
+  .split-range-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .split-output-list {
