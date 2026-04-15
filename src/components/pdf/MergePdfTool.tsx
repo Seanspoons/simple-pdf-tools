@@ -23,6 +23,7 @@ import { FloatingMessage } from '../FloatingMessage';
 import { triggerDownload } from '../../utils/exportPDF';
 import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 import { UploadPanel } from '../UploadPanel';
+import { clearToolDraft, loadToolDraft, saveToolDraft } from '../../utils/toolDraftStore';
 
 type PreviewOrientation = 'portrait' | 'landscape';
 
@@ -38,6 +39,17 @@ type MergeItem = {
 };
 
 type ConfirmAction = 'clear' | null;
+
+type StoredMergeDraft = {
+  files: Array<{
+    id: string;
+    file: File;
+    rotation: MergeItem['rotation'];
+    visualRotation: number;
+  }>;
+};
+
+const MERGE_DRAFT_ID = 'merge-pdf-draft';
 
 function createId() {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -129,6 +141,7 @@ async function renderPdfPreview(file: File) {
 export function MergePdfTool() {
   const cardRefs = useRef(new Map<string, HTMLElement>());
   const previewJobsRef = useRef(new Set<string>());
+  const hasRestoredDraftRef = useRef(false);
   const [files, setFiles] = useState<MergeItem[]>([]);
   const [isBusy, setIsBusy] = useState(false);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
@@ -160,7 +173,36 @@ export function MergePdfTool() {
   }, [files, totalSize]);
 
   useEffect(() => {
+    let isCancelled = false;
+
+    void loadToolDraft<StoredMergeDraft>(MERGE_DRAFT_ID)
+      .then((draft) => {
+        if (isCancelled || !draft?.files.length) {
+          hasRestoredDraftRef.current = true;
+          return;
+        }
+
+        setFiles(
+          draft.files.map((item) => ({
+            id: item.id,
+            file: item.file,
+            previewUrl: null,
+            pageCount: null,
+            previewStatus: 'idle',
+            previewOrientation: 'portrait',
+            rotation: item.rotation,
+            visualRotation: item.visualRotation
+          }))
+        );
+        setStatusMessage('Restored your last merge.');
+        hasRestoredDraftRef.current = true;
+      })
+      .catch(() => {
+        hasRestoredDraftRef.current = true;
+      });
+
     return () => {
+      isCancelled = true;
       previewJobsRef.current.clear();
       setFiles((current) => {
         current.forEach((item) => {
@@ -172,6 +214,30 @@ export function MergePdfTool() {
       });
     };
   }, []);
+
+  useEffect(() => {
+    if (!hasRestoredDraftRef.current) {
+      return;
+    }
+
+    const timerId = window.setTimeout(() => {
+      if (files.length === 0) {
+        void clearToolDraft(MERGE_DRAFT_ID);
+        return;
+      }
+
+      void saveToolDraft<StoredMergeDraft>(MERGE_DRAFT_ID, {
+        files: files.map((item) => ({
+          id: item.id,
+          file: item.file,
+          rotation: item.rotation,
+          visualRotation: item.visualRotation
+        }))
+      });
+    }, 180);
+
+    return () => window.clearTimeout(timerId);
+  }, [files]);
 
   useEffect(() => {
     const pendingItems = files.filter(
