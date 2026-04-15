@@ -29,7 +29,7 @@ const TOOL_CARDS: ToolCard[] = [
     path: '/merge-pdf',
     name: 'Merge PDF',
     description: 'Combine multiple PDF files into a single document.',
-    blurb: 'Upload files, reorder them, and download one merged PDF right in your browser.',
+    blurb: 'Upload, reorder, and download one merged PDF in your browser.',
     status: 'live',
     icon: 'merge'
   },
@@ -37,7 +37,7 @@ const TOOL_CARDS: ToolCard[] = [
     path: '/split-pdf',
     name: 'Split PDF',
     description: 'Break a PDF into smaller files or separate sections.',
-    blurb: 'Useful for packets, chapters, and forms you only need in part.',
+    blurb: 'Split out the pages you need from longer PDFs.',
     status: 'live',
     icon: 'split'
   },
