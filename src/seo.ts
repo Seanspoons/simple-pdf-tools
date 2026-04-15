@@ -29,9 +29,9 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
     imageAlt: 'Merge PDF tool preview'
   },
   '/split-pdf': {
-    title: 'Split PDF | Simple PDF Tools',
+    title: 'Split PDF | Break a PDF into Smaller Files in Your Browser',
     description:
-      'Split PDF is planned for Simple PDF Tools. Keep an eye on this route for a browser-based PDF splitter.',
+      'Split a PDF in your browser by selecting pages, splitting every page, or creating page ranges with no uploads or account required.',
     canonicalPath: '/split-pdf',
     image: `${SITE_URL}/og-home.png`,
     imageAlt: 'Split PDF preview'

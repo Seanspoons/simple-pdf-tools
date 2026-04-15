@@ -4,9 +4,23 @@ interface UploadPanelProps {
   onFileSelect: (files: File[]) => void;
   disabled?: boolean;
   fileName?: string;
+  multiple?: boolean;
+  eyebrow?: string;
+  heading?: string;
+  title?: string;
+  copy?: string;
 }
 
-export function UploadPanel({ onFileSelect, disabled = false, fileName }: UploadPanelProps) {
+export function UploadPanel({
+  onFileSelect,
+  disabled = false,
+  fileName,
+  multiple = true,
+  eyebrow = 'Step 1',
+  heading = 'Choose your PDF files',
+  title = 'Choose PDF files',
+  copy = 'Pick one or more PDF files from your device. You can also drag and drop on desktop.'
+}: UploadPanelProps) {
   const inputId = useId();
   const [isDragging, setIsDragging] = useState(false);
 
@@ -38,8 +52,8 @@ export function UploadPanel({ onFileSelect, disabled = false, fileName }: Upload
     <section className="panel">
       <div className="panel-heading">
         <div>
-          <p className="eyebrow">Step 1</p>
-          <h2>Choose your PDF files</h2>
+          <p className="eyebrow">{eyebrow}</p>
+          <h2>{heading}</h2>
         </div>
         {fileName ? <span className="file-badge">{fileName}</span> : null}
       </div>
@@ -59,14 +73,12 @@ export function UploadPanel({ onFileSelect, disabled = false, fileName }: Upload
           className="sr-only"
           type="file"
           accept="application/pdf,.pdf"
-          multiple
+          multiple={multiple}
           onChange={handleInputChange}
           disabled={disabled}
         />
-        <span className="upload-title">Choose PDF files</span>
-        <span className="upload-copy">
-          Pick one or more PDF files from your device. You can also drag and drop on desktop.
-        </span>
+        <span className="upload-title">{title}</span>
+        <span className="upload-copy">{copy}</span>
       </label>
     </section>
   );

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { MergePdfTool } from './components/pdf/MergePdfTool';
+import { SplitPdfTool } from './components/pdf/SplitPdfTool';
 import mergePdfIcon from './assets/merge-pdf.svg';
+import splitPdfIcon from './assets/split-pdf.svg';
 import { applyRouteSeo } from './seo';
 
 type AppRoute = '/' | '/merge-pdf' | '/split-pdf' | '/compress-pdf' | '/extract-pages' | '/rotate-pdf';
@@ -36,7 +38,7 @@ const TOOL_CARDS: ToolCard[] = [
     name: 'Split PDF',
     description: 'Break a PDF into smaller files or separate sections.',
     blurb: 'Useful for packets, chapters, and forms you only need in part.',
-    status: 'soon',
+    status: 'live',
     icon: 'split'
   },
   {
@@ -107,18 +109,17 @@ function ToolIcon({ kind }: { kind: ToolCard['icon'] }) {
     );
   }
 
+  if (kind === 'split') {
+    return (
+      <span className={`suite-tool-icon suite-tool-icon-${kind}`} aria-hidden="true">
+        <img src={splitPdfIcon} alt="" className="suite-tool-icon-image" />
+      </span>
+    );
+  }
+
   return (
     <span className={`suite-tool-icon suite-tool-icon-${kind}`} aria-hidden="true">
       <svg viewBox="0 0 72 72" className="suite-tool-icon-svg" focusable="false">
-        {kind === 'split' ? (
-          <>
-            <path d="M16 13h26l8 8v38H16z" className="icon-surface" strokeLinejoin="round" />
-            <path d="M42 13v10h10" className="icon-accent-outline" strokeLinejoin="round" />
-            <path d="M34 28v20" className="icon-accent-stroke" />
-            <path d="M28 34l6-7 6 7" className="icon-accent-stroke" />
-            <path d="M28 42l6 7 6-7" className="icon-accent-stroke" />
-          </>
-        ) : null}
         {kind === 'compress' ? (
           <>
             <path d="M16 13h26l8 8v38H16z" className="icon-surface" strokeLinejoin="round" />
@@ -352,7 +353,7 @@ export default function App() {
       case '/merge-pdf':
         return <MergePdfTool />;
       case '/split-pdf':
-        return <ComingSoonPage toolName="Split PDF" onNavigate={navigateTo} />;
+        return <SplitPdfTool />;
       case '/compress-pdf':
         return <ComingSoonPage toolName="Compress PDF" onNavigate={navigateTo} />;
       case '/extract-pages':

@@ -692,6 +692,76 @@ select:disabled {
   gap: 6px;
 }
 
+.split-mode-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.choice-card {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: 16px;
+  text-align: left;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: #fcf8f3;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.choice-card:hover,
+.choice-card:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(122, 45, 42, 0.3);
+}
+
+.choice-card.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(122, 45, 42, 0.12);
+}
+
+.choice-card-title {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.choice-card-copy {
+  color: var(--text-soft);
+  font-size: 0.92rem;
+}
+
+.split-page-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 12px;
+}
+
+.split-page-card {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  text-align: left;
+}
+
+.split-page-card:disabled {
+  cursor: default;
+}
+
+.split-thumb-image {
+  width: 100%;
+  height: auto;
+  aspect-ratio: auto;
+  object-fit: contain;
+}
+
+.split-tool-layout .tool-main-col > .panel:last-child,
+.split-tool-layout .tool-side-col > .panel:last-child {
+  margin-bottom: 0;
+}
+
 .suite-tool-icon {
   width: 74px;
   height: 74px;
