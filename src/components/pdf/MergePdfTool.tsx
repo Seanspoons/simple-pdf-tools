@@ -20,7 +20,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { ConfirmModal } from '../ConfirmModal';
 import { FloatingMessage } from '../FloatingMessage';
-import { triggerDownload } from '../../utils/exportImage';
+import { triggerDownload } from '../../utils/exportPDF';
 import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 import { UploadPanel } from '../UploadPanel';
 
@@ -127,11 +127,10 @@ async function renderPdfPreview(file: File) {
 }
 
 export function MergePdfTool() {
-  const inputRef = useRef<HTMLInputElement>(null);
   const cardRefs = useRef(new Map<string, HTMLElement>());
   const previewJobsRef = useRef(new Set<string>());
   const [files, setFiles] = useState<MergeItem[]>([]);
-  const [isDragging, setIsDragging] = useState(false);
+  const [, setIsDragging] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -267,17 +266,6 @@ export function MergePdfTool() {
     if (invalidFiles.length > 0) {
       setErrorMessage(`Only PDF files are supported. Skipped: ${invalidFiles.join(', ')}`);
     }
-  }
-
-  function handleInputChange(event: ChangeEvent<HTMLInputElement>) {
-    addFiles(event.target.files);
-    event.target.value = '';
-  }
-
-  function handleDrop(event: React.DragEvent<HTMLLabelElement>) {
-    event.preventDefault();
-    setIsDragging(false);
-    addFiles(event.dataTransfer.files);
   }
 
   function moveFile(index: number, direction: -1 | 1) {

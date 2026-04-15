@@ -1,4 +1,4 @@
-import { WatermarkSettings } from './types';
+import { WatermarkSettings } from './types-legacy';
 
 export const FONT_OPTIONS = [
   'Arial',

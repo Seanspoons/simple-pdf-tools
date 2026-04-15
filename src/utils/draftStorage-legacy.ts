@@ -1,4 +1,4 @@
-import { ExportFormat, WatermarkSettings } from '../../types';
+import { ExportFormat, WatermarkSettings } from '../types-legacy';
 
 const DATABASE_NAME = 'photo-watermarker';
 const DATABASE_VERSION = 1;
