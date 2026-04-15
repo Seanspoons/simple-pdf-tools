@@ -1,4 +1,23 @@
-import { ChangeEvent, DragEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { ChangeEvent, CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCorners,
+  DragEndEvent,
+  DragStartEvent,
+  DragCancelEvent,
+  DragOverlay
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  useSortable,
+  rectSortingStrategy,
+  arrayMove,
+  defaultAnimateLayoutChanges
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { ConfirmModal } from '../ConfirmModal';
 import { FloatingMessage } from '../FloatingMessage';
 import { triggerDownload } from '../../utils/exportImage';
@@ -42,13 +61,6 @@ function formatBytes(bytes: number): string {
 function createMergedFilename(files: MergeItem[]) {
   const baseName = files[0]?.file.name.replace(/\.pdf$/i, '') || 'merged-pdf';
   return `${baseName}-merged.pdf`;
-}
-
-function moveItem<T>(items: T[], fromIndex: number, toIndex: number) {
-  const next = [...items];
-  const [moved] = next.splice(fromIndex, 1);
-  next.splice(toIndex, 0, moved);
-  return next;
 }
 
 function rotateClockwise(rotation: MergeItem['rotation']): MergeItem['rotation'] {
@@ -116,30 +128,24 @@ async function renderPdfPreview(file: File) {
 export function MergePdfTool() {
   const inputRef = useRef<HTMLInputElement>(null);
   const cardRefs = useRef(new Map<string, HTMLElement>());
-  const previousPositionsRef = useRef(new Map<string, DOMRect>());
   const previewJobsRef = useRef(new Set<string>());
-  const didDropRef = useRef(false);
-  const dragPreviewRef = useRef<HTMLElement | null>(null);
-  const draggedIdRef = useRef<string | null>(null);
-  const targetIndexRef = useRef<number | null>(null);
   const [files, setFiles] = useState<MergeItem[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [draggedId, setDraggedId] = useState<string | null>(null);
-  const [targetIndex, setTargetIndex] = useState<number | null>(null);
 
-  function setDraggedItemId(value: string | null) {
-    draggedIdRef.current = value;
-    setDraggedId(value);
-  }
+  const [activeId, setActiveId] = useState<string | null>(null);
 
-  function setDropTargetIndex(value: number | null) {
-    targetIndexRef.current = value;
-    setTargetIndex(value);
-  }
+  // dnd-kit sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 4
+      }
+    })
+  );
 
   const totalSize = useMemo(
     () => files.reduce((sum, item) => sum + item.file.size, 0),
@@ -154,29 +160,8 @@ export function MergePdfTool() {
     return `${files.length} file${files.length === 1 ? '' : 's'} • ${formatBytes(totalSize)}`;
   }, [files, totalSize]);
 
-  const previewItems = useMemo(() => {
-    if (!draggedId || targetIndex === null) {
-      return files.map((item) => ({ type: 'file' as const, item }));
-    }
-
-    const draggedItem = files.find((item) => item.id === draggedId);
-    if (!draggedItem) {
-      return files.map((item) => ({ type: 'file' as const, item }));
-    }
-
-    const withoutDragged = files.filter((item) => item.id !== draggedId);
-    const clampedIndex = Math.max(0, Math.min(targetIndex, withoutDragged.length));
-
-    return [
-      ...withoutDragged.slice(0, clampedIndex).map((item) => ({ type: 'file' as const, item })),
-      { type: 'placeholder' as const, id: 'merge-drop-slot' },
-      ...withoutDragged.slice(clampedIndex).map((item) => ({ type: 'file' as const, item }))
-    ];
-  }, [files, draggedId, targetIndex]);
-
   useEffect(() => {
     return () => {
-      dragPreviewRef.current?.remove();
       previewJobsRef.current.clear();
       setFiles((current) => {
         current.forEach((item) => {
@@ -240,42 +225,6 @@ export function MergePdfTool() {
     });
   }, [files]);
 
-  useLayoutEffect(() => {
-    const nextPositions = new Map<string, DOMRect>();
-
-    previewItems.forEach((entry) => {
-      if (entry.type !== 'file') {
-        return;
-      }
-
-      const node = cardRefs.current.get(entry.item.id);
-      if (!node) {
-        return;
-      }
-
-      const nextBox = node.getBoundingClientRect();
-      const previousBox = previousPositionsRef.current.get(entry.item.id);
-
-      if (previousBox) {
-        const deltaX = previousBox.left - nextBox.left;
-        const deltaY = previousBox.top - nextBox.top;
-
-        if (deltaX !== 0 || deltaY !== 0) {
-          node.style.transition = 'none';
-          node.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-
-          requestAnimationFrame(() => {
-            node.style.transition = 'transform 220ms ease, box-shadow 140ms ease, border-color 140ms ease';
-            node.style.transform = '';
-          });
-        }
-      }
-
-      nextPositions.set(entry.item.id, nextBox);
-    });
-
-    previousPositionsRef.current = nextPositions;
-  }, [previewItems]);
 
   function appendFiles(incoming: FileList | null) {
     if (!incoming) {
@@ -324,7 +273,7 @@ export function MergePdfTool() {
     event.target.value = '';
   }
 
-  function handleDrop(event: DragEvent<HTMLLabelElement>) {
+  function handleDrop(event: React.DragEvent<HTMLLabelElement>) {
     event.preventDefault();
     setIsDragging(false);
     appendFiles(event.dataTransfer.files);
@@ -336,7 +285,7 @@ export function MergePdfTool() {
       return;
     }
 
-    setFiles((current) => moveItem(current, index, nextIndex));
+    setFiles((current) => arrayMove(current, index, nextIndex));
     setStatusMessage('Updated the merge order.');
   }
 
@@ -367,113 +316,199 @@ export function MergePdfTool() {
     setStatusMessage('Updated page rotation.');
   }
 
-  function clearDragPreview() {
-    if (dragPreviewRef.current) {
-      dragPreviewRef.current.remove();
-      dragPreviewRef.current = null;
-    }
+
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(String(event.active.id));
   }
 
-  function handleCardDragStart(event: DragEvent<HTMLElement>, itemId: string) {
-    const startIndex = files.findIndex((item) => item.id === itemId);
-    if (startIndex === -1) {
-      return;
-    }
-
-    clearDragPreview();
-
-    const sourceCard = event.currentTarget;
-    const dragPreview = sourceCard.cloneNode(true) as HTMLElement;
-    const sourceBounds = sourceCard.getBoundingClientRect();
-
-    dragPreview.classList.add('merge-drag-preview');
-    dragPreview.style.width = `${sourceBounds.width}px`;
-    dragPreview.style.height = `${sourceBounds.height}px`;
-    dragPreview.style.position = 'fixed';
-    dragPreview.style.top = '-1000px';
-    dragPreview.style.left = '-1000px';
-    dragPreview.style.pointerEvents = 'none';
-    dragPreview.style.zIndex = '9999';
-    document.body.appendChild(dragPreview);
-
-    event.dataTransfer.setDragImage(
-      dragPreview,
-      Math.min(sourceBounds.width / 2, 56),
-      Math.min(sourceBounds.height / 2, 72)
-    );
-
-    dragPreviewRef.current = dragPreview;
-    didDropRef.current = false;
-
-    // Let the browser establish the native drag session before React swaps
-    // the source tile for the placeholder slot.
-    requestAnimationFrame(() => {
-      setDraggedItemId(itemId);
-      setDropTargetIndex(startIndex);
-    });
+  function handleDragCancel(_event: DragCancelEvent) {
+    setActiveId(null);
   }
 
-  function updateDropTarget(_event: DragEvent<HTMLElement>, hoveredId: string) {
-    if (!draggedId) {
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over || active.id === over.id) {
       return;
     }
 
-    const draggedIndex = files.findIndex((item) => item.id === draggedId);
-    const hoveredIndex = files.findIndex((item) => item.id === hoveredId);
+    setFiles((items) => {
+      const oldIndex = items.findIndex((i) => i.id === active.id);
+      const newIndex = items.findIndex((i) => i.id === over.id);
 
-    if (draggedIndex === -1 || hoveredIndex === -1) {
-      return;
-    }
-
-    let nextIndex = hoveredIndex;
-    const isLastVisibleCard = hoveredIndex === files.length - 1;
-
-    if (isLastVisibleCard) {
-      nextIndex = files.length - 1;
-    } else if (draggedIndex < hoveredIndex) {
-      nextIndex -= 1;
-    }
-
-    nextIndex = Math.max(0, Math.min(nextIndex, files.length - 1));
-
-    if (nextIndex === targetIndexRef.current) {
-      return;
-    }
-
-    setDropTargetIndex(nextIndex);
-  }
-
-  function commitDrop() {
-    const currentDraggedId = draggedIdRef.current;
-    const currentTargetIndex = targetIndexRef.current;
-
-    if (!currentDraggedId || currentTargetIndex === null) {
-      return;
-    }
-
-    setFiles((current) => {
-      const fromIndex = current.findIndex((item) => item.id === currentDraggedId);
-      if (fromIndex === -1) {
-        return current;
+      if (oldIndex === -1 || newIndex === -1) {
+        return items;
       }
 
-      const nextIndex = Math.max(0, Math.min(currentTargetIndex, current.length - 1));
-      if (fromIndex === nextIndex) {
-        return current;
-      }
-
-      return moveItem(current, fromIndex, nextIndex);
+      return arrayMove(items, oldIndex, newIndex);
     });
 
-    didDropRef.current = true;
     setStatusMessage('Updated the merge order.');
   }
 
-  function handleCommitDrop(event: DragEvent<HTMLElement>) {
-    event.preventDefault();
-    commitDrop();
-    setDraggedItemId(null);
-    setDropTargetIndex(null);
+  function renderMergeCardContent(
+    item: MergeItem,
+    index: number,
+    totalFiles: number,
+    isBusy: boolean,
+    rotateFile: (id: string) => void,
+    removeFile: (id: string) => void,
+    moveFile: (index: number, direction: -1 | 1) => void
+  ) {
+    return (
+      <>
+        <div className="merge-thumb-actions">
+          <button
+            type="button"
+            className="merge-thumb-action-button merge-thumb-rotate-button"
+            onClick={() => rotateFile(item.id)}
+            disabled={isBusy}
+            aria-label={`Rotate ${item.file.name} 90 degrees clockwise`}
+          >
+            ↻
+          </button>
+          <button
+            type="button"
+            className="merge-thumb-action-button merge-thumb-remove-button"
+            onClick={() => removeFile(item.id)}
+            disabled={isBusy}
+            aria-label={`Remove ${item.file.name}`}
+          >
+            ×
+          </button>
+        </div>
+        <div className="merge-thumb-preview">
+          {item.previewStatus === 'ready' && item.previewUrl ? (
+            <img
+              src={item.previewUrl}
+              alt=""
+              className="thumb-image"
+              style={{ transform: `rotate(${item.visualRotation}deg)` }}
+            />
+          ) : (
+            <div
+              className={`merge-thumb-placeholder merge-thumb-placeholder-${item.previewOrientation}`}
+              style={{ transform: `rotate(${item.visualRotation}deg)` }}
+            >
+              <span>{item.previewStatus === 'error' ? 'Preview unavailable' : 'Loading preview...'}</span>
+            </div>
+          )}
+        </div>
+        <div className="thumb-meta">
+          <span className="thumb-order">#{index + 1}</span>
+          <span className="thumb-drag-hint">
+            {item.pageCount ? `${item.pageCount} page${item.pageCount === 1 ? '' : 's'}` : 'PDF'}
+          </span>
+        </div>
+        <p className="thumb-label">{item.file.name}</p>
+        <div className="merge-mobile-actions">
+          <button
+            type="button"
+            className="thumb-inline-button"
+            onClick={() => moveFile(index, -1)}
+            disabled={index === 0 || isBusy}
+          >
+            Move Up
+          </button>
+          <button
+            type="button"
+            className="thumb-inline-button"
+            onClick={() => moveFile(index, 1)}
+            disabled={index === totalFiles - 1 || isBusy}
+          >
+            Move Down
+          </button>
+        </div>
+      </>
+    );
+  }
+
+
+  function SortableItem({
+    item,
+    index,
+    isBusy,
+    rotateFile,
+    removeFile,
+    moveFile,
+    files,
+    cardRefs,
+    activeId
+  }: {
+    item: MergeItem;
+    index: number;
+    isBusy: boolean;
+    rotateFile: (id: string) => void;
+    removeFile: (id: string) => void;
+    moveFile: (index: number, direction: -1 | 1) => void;
+    files: MergeItem[];
+    cardRefs: React.MutableRefObject<Map<string, HTMLElement>>;
+    activeId: string | null;
+  }) {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging
+    } = useSortable({
+      id: item.id,
+      transition: {
+        duration: 140,
+        easing: 'ease-out'
+      },
+      animateLayoutChanges: (args) => {
+        if (args.isDragging) return false;
+        return defaultAnimateLayoutChanges(args);
+      }
+    });
+
+    const isDragOrigin = activeId === item.id;
+    const style: CSSProperties = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: 1,
+      borderStyle: undefined,
+      borderColor: undefined,
+      borderWidth: undefined,
+      background: undefined,
+      boxShadow: undefined,
+      zIndex: isDragging ? 2 : undefined
+    };
+
+    return (
+      <article
+        ref={(node) => {
+          setNodeRef(node);
+          if (node) cardRefs.current.set(item.id, node);
+          else cardRefs.current.delete(item.id);
+        }}
+        style={style}
+        {...attributes}
+        {...listeners}
+        className={`thumb-card merge-thumb-card ${isDragging ? 'is-dragging' : ''} ${isDragOrigin ? 'merge-thumb-card-placeholder' : ''}`}
+      >
+        {isDragOrigin ? null : renderMergeCardContent(item, index, files.length, isBusy, rotateFile, removeFile, moveFile)}
+      </article>
+    );
+  }
+
+  function DragPreviewCard({ item }: { item: MergeItem }) {
+    return (
+      <article
+        className="thumb-card merge-thumb-card is-dragging"
+        style={{
+          boxShadow: '0 18px 40px rgba(28, 24, 19, 0.16)',
+          transform: 'scale(1.02)',
+          cursor: 'grabbing'
+        }}
+      >
+        {renderMergeCardContent(item, 0, 1, true, () => {}, () => {}, () => {})}
+      </article>
+    );
   }
 
   async function runMerge() {
@@ -527,8 +562,6 @@ export function MergePdfTool() {
       });
       return [];
     });
-    setDraggedItemId(null);
-    setDropTargetIndex(null);
     setStatusMessage('Ready for another merge.');
     setErrorMessage(null);
   }
@@ -625,132 +658,40 @@ export function MergePdfTool() {
           </div>
 
           {files.length > 0 ? (
-            <div
-              className="merge-arrange-grid"
-              onDragOver={(event) => {
-                event.preventDefault();
-              }}
-              onDrop={handleCommitDrop}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCorners}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+              onDragCancel={handleDragCancel}
             >
-                {previewItems.map((entry) => {
-                  if (entry.type === 'placeholder') {
-                    return (
-                      <div
-                        key={entry.id}
-                        className="merge-drop-slot"
-                        aria-hidden="true"
-                        onDragOver={(event) => event.preventDefault()}
-                        onDrop={handleCommitDrop}
-                      />
-                    );
-                  }
-
-                  const item = entry.item;
-                  const index = files.findIndex((file) => file.id === item.id);
-
-                  return (
-                    <article
-                    key={item.id}
-                    ref={(node) => {
-                      if (node) {
-                        cardRefs.current.set(item.id, node);
-                      } else {
-                        cardRefs.current.delete(item.id);
-                      }
-                    }}
-                    className={`thumb-card merge-thumb-card ${draggedId === item.id ? 'is-dragging' : ''}`}
-                    draggable={!isBusy}
-                    onDragStart={(event) => {
-                      event.dataTransfer.effectAllowed = 'move';
-                      event.dataTransfer.setData('text/plain', item.id);
-                      handleCardDragStart(event, item.id);
-                    }}
-                    onDragOver={(event) => {
-                      event.preventDefault();
-                      updateDropTarget(event, item.id);
-                    }}
-                    onDragEnter={(event) => {
-                      updateDropTarget(event, item.id);
-                    }}
-                    onDrop={handleCommitDrop}
-                    onDragEnd={() => {
-                      const dropped = didDropRef.current;
-                      didDropRef.current = false;
-                      clearDragPreview();
-                      setDraggedItemId(null);
-                      setDropTargetIndex(null);
-
-                      if (!dropped) {
-                        setStatusMessage(null);
-                      }
-                    }}
-                  >
-                  <div className="merge-thumb-actions">
-                    <button
-                      type="button"
-                      className="merge-thumb-action-button merge-thumb-rotate-button"
-                      onClick={() => rotateFile(item.id)}
-                      disabled={isBusy}
-                      aria-label={`Rotate ${item.file.name} 90 degrees clockwise`}
-                    >
-                      ↻
-                    </button>
-                    <button
-                      type="button"
-                      className="merge-thumb-action-button merge-thumb-remove-button"
-                      onClick={() => removeFile(item.id)}
-                      disabled={isBusy}
-                      aria-label={`Remove ${item.file.name}`}
-                    >
-                      ×
-                    </button>
-                  </div>
-                  <div className="merge-thumb-preview">
-                    {item.previewStatus === 'ready' && item.previewUrl ? (
-                      <img
-                        src={item.previewUrl}
-                        alt=""
-                        className="thumb-image"
-                        style={{ transform: `rotate(${item.visualRotation}deg)` }}
-                      />
-                    ) : (
-                      <div
-                        className={`merge-thumb-placeholder merge-thumb-placeholder-${item.previewOrientation}`}
-                        style={{ transform: `rotate(${item.visualRotation}deg)` }}
-                      >
-                        <span>{item.previewStatus === 'error' ? 'Preview unavailable' : 'Loading preview...'}</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="thumb-meta">
-                    <span className="thumb-order">#{index + 1}</span>
-                    <span className="thumb-drag-hint">
-                      {item.pageCount ? `${item.pageCount} page${item.pageCount === 1 ? '' : 's'}` : 'PDF'}
-                    </span>
-                  </div>
-                  <p className="thumb-label">{item.file.name}</p>
-                  <div className="merge-mobile-actions">
-                    <button
-                      type="button"
-                      className="thumb-inline-button"
-                      onClick={() => moveFile(index, -1)}
-                      disabled={index === 0 || isBusy}
-                    >
-                      Move Up
-                    </button>
-                    <button
-                      type="button"
-                      className="thumb-inline-button"
-                      onClick={() => moveFile(index, 1)}
-                      disabled={index === files.length - 1 || isBusy}
-                    >
-                      Move Down
-                    </button>
-                  </div>
-                </article>
-                  );
-                })}
-            </div>
+              <SortableContext items={files.map((f) => f.id)} strategy={rectSortingStrategy}>
+                <div className="merge-arrange-grid">
+                  {files.map((item, index) => (
+                    <SortableItem
+                      key={item.id}
+                      item={item}
+                      index={index}
+                      isBusy={isBusy}
+                      rotateFile={rotateFile}
+                      removeFile={removeFile}
+                      moveFile={moveFile}
+                      files={files}
+                      cardRefs={cardRefs}
+                      activeId={activeId}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+              <DragOverlay dropAnimation={null}>
+                {activeId
+                  ? (() => {
+                      const activeItem = files.find((item) => item.id === activeId);
+                      return activeItem ? <DragPreviewCard item={activeItem} /> : null;
+                    })()
+                  : null}
+              </DragOverlay>
+            </DndContext>
           ) : (
             <div className="preview-placeholder">
               <p>Add PDF files first, then drag the cards here to reorder them.</p>
