@@ -706,7 +706,16 @@ select:disabled {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 22px;
-  align-items: start;
+  align-items: stretch;
+}
+
+.split-top-grid > .panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.split-top-grid .upload-dropzone {
+  flex: 1;
 }
 
 .split-mode-panel,
