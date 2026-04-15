@@ -574,8 +574,7 @@ export function MergePdfTool() {
             <p className="eyebrow">Merge PDF</p>
             <h1>Combine PDF files without leaving your browser.</h1>
             <p className="hero-copy">
-              Add multiple PDF files, check actual page previews, drag them into order, and export
-              one merged document with the same step-based flow as the original tools.
+              Upload multiple PDFs, preview pages, arrange them with drag-and-drop, and export a single merged document using a simple step-by-step flow.
             </p>
             <div className="hero-tags" aria-label="Merge PDF highlights">
               <span className="hero-tag">Multiple PDF files</span>
