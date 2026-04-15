@@ -22,6 +22,7 @@ import { ConfirmModal } from '../ConfirmModal';
 import { FloatingMessage } from '../FloatingMessage';
 import { triggerDownload } from '../../utils/exportImage';
 import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
+import { UploadPanel } from '../UploadPanel';
 
 type PreviewOrientation = 'portrait' | 'landscape';
 
@@ -226,7 +227,7 @@ export function MergePdfTool() {
   }, [files]);
 
 
-  function appendFiles(incoming: FileList | null) {
+  function addFiles(incoming: File[] | FileList | null) {
     if (!incoming) {
       return;
     }
@@ -269,14 +270,14 @@ export function MergePdfTool() {
   }
 
   function handleInputChange(event: ChangeEvent<HTMLInputElement>) {
-    appendFiles(event.target.files);
+    addFiles(event.target.files);
     event.target.value = '';
   }
 
   function handleDrop(event: React.DragEvent<HTMLLabelElement>) {
     event.preventDefault();
     setIsDragging(false);
-    appendFiles(event.dataTransfer.files);
+    addFiles(event.dataTransfer.files);
   }
 
   function moveFile(index: number, direction: -1 | 1) {
@@ -609,43 +610,19 @@ export function MergePdfTool() {
       ) : null}
 
       <div className="merge-flow-stack">
-        <section className="panel merge-step-panel merge-step-upload">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">Step 1</p>
-              <h2>Choose your PDF files</h2>
-            </div>
-            {files.length > 0 ? (
-              <span className="file-badge">
-                {files.length} file{files.length === 1 ? '' : 's'}
-              </span>
-            ) : null}
-          </div>
-
-          <label
-            className={`upload-dropzone ${isDragging ? 'is-dragging' : ''} ${isBusy ? 'is-disabled' : ''}`}
-            onDragOver={(event) => {
-              event.preventDefault();
-              setIsDragging(true);
-            }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={handleDrop}
-          >
-            <input
-              ref={inputRef}
-              className="sr-only"
-              type="file"
-              accept="application/pdf,.pdf"
-              multiple
-              onChange={handleInputChange}
-              disabled={isBusy}
-            />
-            <span className="upload-title">Choose PDF Files</span>
-            <span className="upload-copy">
-              Pick PDF files from your device. You can also drag and drop on desktop.
-            </span>
-          </label>
-        </section>
+        <UploadPanel
+          onFileSelect={(selectedFiles) => {
+            void addFiles(selectedFiles);
+          }}
+          disabled={isBusy}
+          fileName={
+            files.length === 1
+              ? files[0]?.file.name
+              : files.length > 1
+                ? `${files.length} files selected`
+                : undefined
+          }
+        />
 
         <section className="panel merge-step-panel merge-step-arrange">
           <div className="panel-heading merge-step-heading-center">
@@ -698,7 +675,7 @@ export function MergePdfTool() {
           )}
         </section>
 
-        <section className="panel merge-step-panel merge-step-export">
+        <section className="panel merge-step-panel">
           <div className="panel-heading">
             <div>
               <p className="eyebrow">Step 3</p>

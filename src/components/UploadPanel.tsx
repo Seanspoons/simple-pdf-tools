@@ -1,7 +1,7 @@
 import { ChangeEvent, DragEvent, useId, useState } from 'react';
 
 interface UploadPanelProps {
-  onFileSelect: (file: File) => void;
+  onFileSelect: (files: File[]) => void;
   disabled?: boolean;
   fileName?: string;
 }
@@ -11,9 +11,15 @@ export function UploadPanel({ onFileSelect, disabled = false, fileName }: Upload
   const [isDragging, setIsDragging] = useState(false);
 
   const handleFiles = (files: FileList | null) => {
-    const file = files?.[0];
-    if (file) {
-      onFileSelect(file);
+    const nextFiles = files
+      ? Array.from(files).filter(
+          (file) =>
+            file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+        )
+      : [];
+
+    if (nextFiles.length > 0) {
+      onFileSelect(nextFiles);
     }
   };
 
@@ -33,7 +39,7 @@ export function UploadPanel({ onFileSelect, disabled = false, fileName }: Upload
       <div className="panel-heading">
         <div>
           <p className="eyebrow">Step 1</p>
-          <h2>Choose your photo</h2>
+          <h2>Choose your PDF files</h2>
         </div>
         {fileName ? <span className="file-badge">{fileName}</span> : null}
       </div>
@@ -52,13 +58,14 @@ export function UploadPanel({ onFileSelect, disabled = false, fileName }: Upload
           id={inputId}
           className="sr-only"
           type="file"
-          accept="image/*,.heic,.heif"
+          accept="application/pdf,.pdf"
+          multiple
           onChange={handleInputChange}
           disabled={disabled}
         />
-        <span className="upload-title">Choose Photo</span>
+        <span className="upload-title">Choose PDF files</span>
         <span className="upload-copy">
-          Pick a JPEG, PNG, WebP, GIF, BMP, AVIF, SVG, HEIC, or HEIF image. You can also drag and drop on desktop.
+          Pick one or more PDF files from your device. You can also drag and drop on desktop.
         </span>
       </label>
     </section>

@@ -53,6 +53,15 @@ All PDF processing is intended to happen locally in the browser.
 - `pdf-lib` for browser-side PDF merging
 - PWA support for offline app-shell usage
 
+## Reusable UI patterns
+
+To keep layout patterns while removing legacy photo tools, the two-column step layout is now preserved as neutral UI primitives:
+
+- `src/components/layout/TwoColumnToolLayout.tsx`
+- `src/styles.css` classes: `tool-two-col-layout`, `tool-main-col`, `tool-side-col`, `tool-sticky-wrap`
+
+These classes are intended for future PDF tools that need a preview/content column and a controls/export column.
+
 ## Running locally
 
 Requirements:
