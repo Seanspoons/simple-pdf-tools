@@ -333,16 +333,6 @@ export function MergePdfTool() {
     }
   }
 
-  function moveFile(index: number, direction: -1 | 1) {
-    const nextIndex = index + direction;
-    if (nextIndex < 0 || nextIndex >= files.length) {
-      return;
-    }
-
-    setFiles((current) => arrayMove(current, index, nextIndex));
-    setStatusMessage('Updated the merge order.');
-  }
-
   function removeFile(id: string) {
     setFiles((current) => {
       const next = current.filter((item) => item.id !== id);
@@ -405,11 +395,9 @@ export function MergePdfTool() {
   function renderMergeCardContent(
     item: MergeItem,
     index: number,
-    totalFiles: number,
     isBusy: boolean,
     rotateFile: (id: string) => void,
-    removeFile: (id: string) => void,
-    moveFile: (index: number, direction: -1 | 1) => void
+    removeFile: (id: string) => void
   ) {
     return (
       <>
@@ -457,24 +445,6 @@ export function MergePdfTool() {
           </span>
         </div>
         <p className="thumb-label">{item.file.name}</p>
-        <div className="merge-mobile-actions">
-          <button
-            type="button"
-            className="thumb-inline-button"
-            onClick={() => moveFile(index, -1)}
-            disabled={index === 0 || isBusy}
-          >
-            Move Up
-          </button>
-          <button
-            type="button"
-            className="thumb-inline-button"
-            onClick={() => moveFile(index, 1)}
-            disabled={index === totalFiles - 1 || isBusy}
-          >
-            Move Down
-          </button>
-        </div>
       </>
     );
   }
@@ -486,8 +456,6 @@ export function MergePdfTool() {
     isBusy,
     rotateFile,
     removeFile,
-    moveFile,
-    files,
     cardRefs,
     activeId
   }: {
@@ -496,8 +464,6 @@ export function MergePdfTool() {
     isBusy: boolean;
     rotateFile: (id: string) => void;
     removeFile: (id: string) => void;
-    moveFile: (index: number, direction: -1 | 1) => void;
-    files: MergeItem[];
     cardRefs: React.MutableRefObject<Map<string, HTMLElement>>;
     activeId: string | null;
   }) {
@@ -545,7 +511,7 @@ export function MergePdfTool() {
         {...listeners}
         className={`thumb-card merge-thumb-card ${isDragging ? 'is-dragging' : ''} ${isDragOrigin ? 'merge-thumb-card-placeholder' : ''}`}
       >
-        {isDragOrigin ? null : renderMergeCardContent(item, index, files.length, isBusy, rotateFile, removeFile, moveFile)}
+        {isDragOrigin ? null : renderMergeCardContent(item, index, isBusy, rotateFile, removeFile)}
       </article>
     );
   }
@@ -560,7 +526,7 @@ export function MergePdfTool() {
           cursor: 'grabbing'
         }}
       >
-        {renderMergeCardContent(item, 0, 1, true, () => {}, () => {}, () => {})}
+        {renderMergeCardContent(item, 0, true, () => {}, () => {})}
       </article>
     );
   }
@@ -704,8 +670,6 @@ export function MergePdfTool() {
                       isBusy={isBusy}
                       rotateFile={rotateFile}
                       removeFile={removeFile}
-                      moveFile={moveFile}
-                      files={files}
                       cardRefs={cardRefs}
                       activeId={activeId}
                     />

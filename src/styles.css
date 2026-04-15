@@ -692,11 +692,6 @@ select:disabled {
   gap: 6px;
 }
 
-.merge-mobile-actions {
-  display: none;
-  gap: 8px;
-}
-
 .suite-tool-icon {
   width: 74px;
   height: 74px;
@@ -2902,11 +2897,6 @@ select:disabled {
 
   .suite-card-header {
     flex-direction: column;
-  }
-
-  .merge-mobile-actions {
-    display: flex;
-    flex-wrap: wrap;
   }
 
   .preset-save-row {
