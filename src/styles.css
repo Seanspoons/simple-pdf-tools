@@ -697,6 +697,24 @@ select:disabled {
   gap: 10px;
 }
 
+.split-tool-flow {
+  display: grid;
+  gap: 22px;
+}
+
+.split-top-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.split-mode-panel,
+.split-work-panel,
+.split-export-panel {
+  margin-bottom: 0;
+}
+
 .choice-card {
   display: grid;
   gap: 6px;
@@ -757,11 +775,6 @@ select:disabled {
   object-fit: contain;
 }
 
-.split-tool-layout .tool-main-col > .panel:last-child,
-.split-tool-layout .tool-side-col > .panel:last-child {
-  margin-bottom: 0;
-}
-
 .split-range-editor {
   display: grid;
   gap: 10px;
@@ -819,6 +832,12 @@ select:disabled {
 .split-output-detail {
   color: var(--text-soft);
   font-size: 0.84rem;
+}
+
+@media (max-width: 860px) {
+  .split-top-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .suite-tool-icon {

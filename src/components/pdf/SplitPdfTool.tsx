@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FloatingMessage } from '../FloatingMessage';
 import { UploadPanel } from '../UploadPanel';
-import { TwoColumnToolLayout } from '../layout/TwoColumnToolLayout';
 import { clearToolDraft, loadToolDraft, saveToolDraft } from '../../utils/toolDraftStore';
 import { PdfPagePreview, renderPdfPagePreviews } from '../../utils/pdfPreview';
 import {
@@ -328,7 +327,7 @@ export function SplitPdfTool() {
   }, [file, mode, pageCount, parsedRanges, selectedPages]);
 
   const controls = (
-    <>
+    <div className="split-top-grid">
       <UploadPanel
         onFileSelect={handleFileSelect}
         disabled={false}
@@ -339,7 +338,7 @@ export function SplitPdfTool() {
         copy="Pick one PDF from your device. You can also drag and drop it here."
       />
 
-      <section className="panel">
+      <section className="panel split-mode-panel">
         <div className="panel-heading">
           <div>
             <p className="eyebrow">Step 2</p>
@@ -375,74 +374,29 @@ export function SplitPdfTool() {
           </div>
         ) : null}
       </section>
-
-      <section className="panel">
-        <div className="panel-heading">
-          <div>
-            <p className="eyebrow">Step 3</p>
-            <h2>Review and export</h2>
-          </div>
-        </div>
-        <div className="export-preview-block">
-          <p className="helper-text export-preview-label">Export summary</p>
-          <div className="export-preview-shell">
-            <p className="helper-text">{fileSummary}</p>
-            <p className="helper-text">{exportSummary}</p>
-            {plannedOutputs.length > 0 ? (
-              <div className="split-output-list">
-                {plannedOutputs.slice(0, 6).map((output) => (
-                  <div key={output.filename} className="split-output-item">
-                    <span className="split-output-name">{output.filename}</span>
-                    <span className="split-output-detail">{output.detail}</span>
-                  </div>
-                ))}
-                {plannedOutputs.length > 6 ? (
-                  <p className="helper-text">And {plannedOutputs.length - 6} more output files.</p>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-        </div>
-        <div className="panel-heading-actions">
-          {mode === 'selected-pages' ? (
-            <>
-              <button type="button" className="ghost-button" onClick={selectAllPages} disabled={!pages.length || isBusy}>
-                Select all
-              </button>
-              <button type="button" className="ghost-button" onClick={clearSelectedPages} disabled={!selectedPages.length || isBusy}>
-                Clear selection
-              </button>
-            </>
-          ) : null}
-          <button
-            type="button"
-            className="primary-button"
-            onClick={exportSplit}
-            disabled={
-              !file ||
-              !pageCount ||
-              isBusy ||
-              previewStatus !== 'ready' ||
-              (mode === 'selected-pages' && selectedPages.length === 0) ||
-              (mode === 'page-ranges' && (!!parsedRanges.error || parsedRanges.ranges.length === 0))
-            }
-          >
-            {mode === 'every-page' ? 'Export Split PDFs' : 'Export Split PDF'}
-          </button>
-        </div>
-      </section>
-    </>
+    </div>
   );
 
   const preview = (
-    <>
-      <section className="panel tool-sticky-wrap">
+    <section className="panel split-work-panel">
         <div className="panel-heading">
           <div>
-            <p className="eyebrow">Preview</p>
+            <p className="eyebrow">Step 3</p>
             <h2>Document pages</h2>
           </div>
-          {pageCount ? <span className="dimension-badge">{pageCount} pages</span> : null}
+          <div className="panel-heading-actions">
+            {pageCount ? <span className="dimension-badge">{pageCount} pages</span> : null}
+            {mode === 'selected-pages' ? (
+              <>
+                <button type="button" className="ghost-button" onClick={selectAllPages} disabled={!pages.length || isBusy}>
+                  Select all
+                </button>
+                <button type="button" className="ghost-button" onClick={clearSelectedPages} disabled={!selectedPages.length || isBusy}>
+                  Clear selection
+                </button>
+              </>
+            ) : null}
+          </div>
         </div>
         {previewStatus === 'loading' ? <div className="preview-placeholder"><p>Loading page previews…</p></div> : null}
         {previewStatus === 'error' ? <div className="preview-placeholder"><p>Preview unavailable.</p></div> : null}
@@ -475,7 +429,54 @@ export function SplitPdfTool() {
         ) : null}
         {previewStatus === 'idle' ? <div className="preview-placeholder"><p>Upload a PDF to preview and split it.</p></div> : null}
       </section>
-    </>
+  );
+
+  const exportPanel = (
+    <section className="panel split-export-panel">
+      <div className="panel-heading">
+        <div>
+          <p className="eyebrow">Step 4</p>
+          <h2>Review and export</h2>
+        </div>
+      </div>
+      <div className="export-preview-block">
+        <p className="helper-text export-preview-label">Export summary</p>
+        <div className="export-preview-shell">
+          <p className="helper-text">{fileSummary}</p>
+          <p className="helper-text">{exportSummary}</p>
+          {plannedOutputs.length > 0 ? (
+            <div className="split-output-list">
+              {plannedOutputs.slice(0, 6).map((output) => (
+                <div key={output.filename} className="split-output-item">
+                  <span className="split-output-name">{output.filename}</span>
+                  <span className="split-output-detail">{output.detail}</span>
+                </div>
+              ))}
+              {plannedOutputs.length > 6 ? (
+                <p className="helper-text">And {plannedOutputs.length - 6} more output files.</p>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      </div>
+      <div className="panel-heading-actions">
+        <button
+          type="button"
+          className="primary-button"
+          onClick={exportSplit}
+          disabled={
+            !file ||
+            !pageCount ||
+            isBusy ||
+            previewStatus !== 'ready' ||
+            (mode === 'selected-pages' && selectedPages.length === 0) ||
+            (mode === 'page-ranges' && (!!parsedRanges.error || parsedRanges.ranges.length === 0))
+          }
+        >
+          {mode === 'every-page' ? 'Export Split PDFs' : 'Export Split PDF'}
+        </button>
+      </div>
+    </section>
   );
 
   return (
@@ -512,17 +513,17 @@ export function SplitPdfTool() {
           <div className="tip-note" role="note">
             <span className="tip-note-icon" aria-hidden="true">i</span>
             <p className="helper-text">
-              Split PDF uses a side-by-side workflow so your split settings stay visible while you inspect pages.
+              Split PDF keeps file upload and split settings together at the top, then gives the page preview a full-width work area.
             </p>
           </div>
         </div>
       </section>
 
-      <TwoColumnToolLayout
-        className="split-tool-layout"
-        main={controls}
-        side={preview}
-      />
+      <div className="tool-flow split-tool-flow">
+        {controls}
+        {preview}
+        {exportPanel}
+      </div>
     </>
   );
 }
