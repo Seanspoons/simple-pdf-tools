@@ -29,7 +29,7 @@ const TOOL_CARDS: ToolCard[] = [
     path: '/merge-pdf',
     name: 'Merge PDF',
     description: 'Combine multiple PDF files into a single document.',
-    blurb: 'Upload, reorder, and download one merged PDF in your browser.',
+    blurb: 'Upload, reorder, and download one merged PDF.',
     status: 'live',
     icon: 'merge'
   },
