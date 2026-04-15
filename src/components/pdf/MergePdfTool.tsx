@@ -21,11 +21,9 @@ import { CSS } from '@dnd-kit/utilities';
 import { ConfirmModal } from '../ConfirmModal';
 import { FloatingMessage } from '../FloatingMessage';
 import { triggerDownload } from '../../utils/exportPDF';
-import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 import { UploadPanel } from '../UploadPanel';
 import { clearToolDraft, loadToolDraft, saveToolDraft } from '../../utils/toolDraftStore';
-
-type PreviewOrientation = 'portrait' | 'landscape';
+import { PreviewOrientation, renderPdfFirstPagePreview } from '../../utils/pdfPreview';
 
 type MergeItem = {
   id: string;
@@ -82,60 +80,6 @@ function rotateClockwise(rotation: MergeItem['rotation']): MergeItem['rotation']
   }
 
   return (rotation + 90) as MergeItem['rotation'];
-}
-
-async function renderPdfPreview(file: File) {
-  const { getDocument, GlobalWorkerOptions } = await import('pdfjs-dist/legacy/build/pdf.mjs');
-  GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
-
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  const pdf = await getDocument({
-    data: bytes,
-    useWorkerFetch: false,
-    isEvalSupported: false
-  }).promise;
-
-  try {
-    const page = await pdf.getPage(1);
-    const viewport = page.getViewport({ scale: 1 });
-    const previewOrientation: PreviewOrientation =
-      viewport.width > viewport.height ? 'landscape' : 'portrait';
-    const scale = Math.min(240 / viewport.width, 320 / viewport.height, 1.5);
-    const scaledViewport = page.getViewport({ scale });
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-
-    if (!context) {
-      throw new Error('The browser could not prepare a PDF preview.');
-    }
-
-    let previewUrl: string | null = null;
-
-    try {
-      canvas.width = Math.ceil(scaledViewport.width);
-      canvas.height = Math.ceil(scaledViewport.height);
-      context.fillStyle = '#ffffff';
-      context.fillRect(0, 0, canvas.width, canvas.height);
-
-      await page.render({
-        canvas,
-        canvasContext: context,
-        viewport: scaledViewport
-      }).promise;
-
-      previewUrl = canvas.toDataURL('image/png');
-    } catch {
-      previewUrl = null;
-    }
-
-    return {
-      previewUrl,
-      pageCount: pdf.numPages,
-      previewOrientation
-    };
-  } finally {
-    await pdf.destroy();
-  }
 }
 
 export function MergePdfTool() {
@@ -256,7 +200,7 @@ export function MergePdfTool() {
         )
       );
 
-      void renderPdfPreview(item.file)
+      void renderPdfFirstPagePreview(item.file)
         .then(({ previewUrl, pageCount, previewOrientation }) => {
           setFiles((current) =>
             current.map((entry) =>
