@@ -4,6 +4,12 @@ import { UploadPanel } from '../UploadPanel';
 import { TwoColumnToolLayout } from '../layout/TwoColumnToolLayout';
 import { clearToolDraft, loadToolDraft, saveToolDraft } from '../../utils/toolDraftStore';
 import { PdfPagePreview, renderPdfPagePreviews } from '../../utils/pdfPreview';
+import {
+  createPdfBlobFromPageNumbers,
+  downloadBlobSequence,
+  getPdfBaseName,
+  parseSplitRanges
+} from '../../utils/pdfSplit';
 
 type SplitMode = 'selected-pages' | 'every-page' | 'page-ranges';
 
@@ -44,6 +50,7 @@ export function SplitPdfTool() {
   const [rangesText, setRangesText] = useState('1-2\n3-4');
   const [pageCount, setPageCount] = useState<number | null>(null);
   const [previewStatus, setPreviewStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [isBusy, setIsBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
@@ -51,6 +58,14 @@ export function SplitPdfTool() {
     () => sortNumbersAscending(pages.filter((page) => page.selected).map((page) => page.pageNumber)),
     [pages]
   );
+
+  const parsedRanges = useMemo(() => {
+    if (!pageCount || mode !== 'page-ranges') {
+      return { ranges: [], error: null as string | null };
+    }
+
+    return parseSplitRanges(rangesText, pageCount);
+  }, [mode, pageCount, rangesText]);
 
   const fileSummary = useMemo(() => {
     if (!file) {
@@ -102,11 +117,7 @@ export function SplitPdfTool() {
     setPreviewStatus('loading');
     setErrorMessage(null);
 
-    void renderPdfPagePreviews(
-      file,
-      Array.from({ length: 300 }, (_, index) => index + 1),
-      { maxWidth: 180, maxHeight: 220, maxScale: 1.1 }
-    )
+      void renderPdfPagePreviews(file, undefined, { maxWidth: 180, maxHeight: 220, maxScale: 1.1 })
       .then(({ pageCount, previews }) => {
         if (isCancelled) {
           return;
@@ -183,6 +194,104 @@ export function SplitPdfTool() {
     );
   }
 
+  function selectAllPages() {
+    setPages((current) => current.map((page) => ({ ...page, selected: true })));
+  }
+
+  function clearSelectedPages() {
+    setPages((current) => current.map((page) => ({ ...page, selected: false })));
+  }
+
+  async function exportSplit() {
+    if (!file || !pageCount) {
+      setErrorMessage('Choose a PDF file before exporting.');
+      return;
+    }
+
+    setIsBusy(true);
+    setErrorMessage(null);
+
+    try {
+      const baseName = getPdfBaseName(file);
+
+      if (mode === 'selected-pages') {
+        if (selectedPages.length === 0) {
+          setErrorMessage('Select one or more pages to export.');
+          return;
+        }
+
+        const blob = await createPdfBlobFromPageNumbers(file, selectedPages);
+        await downloadBlobSequence([
+          {
+            blob,
+            filename: `${baseName}-selected-pages.pdf`
+          }
+        ]);
+        setStatusMessage('Selected pages are ready.');
+        return;
+      }
+
+      if (mode === 'every-page') {
+        const outputs = await Promise.all(
+          Array.from({ length: pageCount }, async (_, index) => ({
+            blob: await createPdfBlobFromPageNumbers(file, [index + 1]),
+            filename: `${baseName}-page-${index + 1}.pdf`
+          }))
+        );
+
+        await downloadBlobSequence(outputs);
+        setStatusMessage(`Downloaded ${outputs.length} split PDF files.`);
+        return;
+      }
+
+      if (parsedRanges.error) {
+        setErrorMessage(parsedRanges.error);
+        return;
+      }
+
+      const outputs = await Promise.all(
+        parsedRanges.ranges.map(async (range) => ({
+          blob: await createPdfBlobFromPageNumbers(
+            file,
+            Array.from({ length: range.end - range.start + 1 }, (_, index) => range.start + index)
+          ),
+          filename: `${baseName}-pages-${range.start}-${range.end}.pdf`
+        }))
+      );
+
+      await downloadBlobSequence(outputs);
+      setStatusMessage(`Downloaded ${outputs.length} split PDF files.`);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'The PDF could not be split.');
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  const exportSummary = useMemo(() => {
+    if (!file || !pageCount) {
+      return 'Upload a PDF to review the split output.';
+    }
+
+    if (mode === 'selected-pages') {
+      if (selectedPages.length === 0) {
+        return 'Select the pages you want to include in the new PDF.';
+      }
+
+      return `${selectedPages.length} page${selectedPages.length === 1 ? '' : 's'} will be exported as one PDF.`;
+    }
+
+    if (mode === 'every-page') {
+      return `${pageCount} PDF files will be created, one for each page.`;
+    }
+
+    if (parsedRanges.error) {
+      return parsedRanges.error;
+    }
+
+    return `${parsedRanges.ranges.length} PDF file${parsedRanges.ranges.length === 1 ? '' : 's'} will be created from your page ranges.`;
+  }, [file, mode, pageCount, parsedRanges, selectedPages.length]);
+
   const controls = (
     <>
       <UploadPanel
@@ -216,6 +325,20 @@ export function SplitPdfTool() {
             <span className="choice-card-copy">Create one PDF for each range you enter.</span>
           </button>
         </div>
+        {mode === 'page-ranges' ? (
+          <div className="split-range-editor">
+            <label className="field-label" htmlFor="split-ranges">Page ranges</label>
+            <textarea
+              id="split-ranges"
+              className="text-input split-range-input"
+              value={rangesText}
+              onChange={(event) => setRangesText(event.target.value)}
+              rows={5}
+              placeholder={'1-3\n4-6\n7-10'}
+            />
+            <p className="helper-text">Add one range per line, or separate them with commas.</p>
+          </div>
+        ) : null}
       </section>
 
       <section className="panel">
@@ -225,8 +348,40 @@ export function SplitPdfTool() {
             <h2>Review and export</h2>
           </div>
         </div>
-        <p className="helper-text">{fileSummary}</p>
-        <p className="helper-text">Split export is coming next in this implementation pass.</p>
+        <div className="export-preview-block">
+          <p className="helper-text export-preview-label">Export summary</p>
+          <div className="export-preview-shell">
+            <p className="helper-text">{fileSummary}</p>
+            <p className="helper-text">{exportSummary}</p>
+          </div>
+        </div>
+        <div className="panel-heading-actions">
+          {mode === 'selected-pages' ? (
+            <>
+              <button type="button" className="ghost-button" onClick={selectAllPages} disabled={!pages.length || isBusy}>
+                Select all
+              </button>
+              <button type="button" className="ghost-button" onClick={clearSelectedPages} disabled={!selectedPages.length || isBusy}>
+                Clear selection
+              </button>
+            </>
+          ) : null}
+          <button
+            type="button"
+            className="primary-button"
+            onClick={exportSplit}
+            disabled={
+              !file ||
+              !pageCount ||
+              isBusy ||
+              previewStatus !== 'ready' ||
+              (mode === 'selected-pages' && selectedPages.length === 0) ||
+              (mode === 'page-ranges' && (!!parsedRanges.error || parsedRanges.ranges.length === 0))
+            }
+          >
+            {mode === 'every-page' ? 'Export Split PDFs' : 'Export Split PDF'}
+          </button>
+        </div>
       </section>
     </>
   );

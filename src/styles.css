@@ -762,6 +762,39 @@ select:disabled {
   margin-bottom: 0;
 }
 
+.split-range-editor {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.field-label {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.text-input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: #fcf8f3;
+  color: var(--text);
+  font: inherit;
+  resize: vertical;
+}
+
+.text-input:focus {
+  outline: 2px solid rgba(122, 45, 42, 0.18);
+  outline-offset: 2px;
+  border-color: rgba(122, 45, 42, 0.34);
+}
+
+.split-range-input {
+  min-height: 132px;
+}
+
 .suite-tool-icon {
   width: 74px;
   height: 74px;

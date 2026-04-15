@@ -73,7 +73,7 @@ async function renderSinglePage(
 
 export async function renderPdfPagePreviews(
   file: File,
-  pageNumbers: number[],
+  pageNumbers?: number[],
   size: PreviewSize = {}
 ): Promise<{ pageCount: number; previews: PdfPagePreview[] }> {
   const pdf = await openPdfDocument(file);
@@ -85,8 +85,12 @@ export async function renderPdfPagePreviews(
 
   try {
     const previews: PdfPagePreview[] = [];
+    const pagesToRender =
+      pageNumbers && pageNumbers.length > 0
+        ? pageNumbers
+        : Array.from({ length: pdf.numPages }, (_, index) => index + 1);
 
-    for (const pageNumber of pageNumbers) {
+    for (const pageNumber of pagesToRender) {
       if (pageNumber < 1 || pageNumber > pdf.numPages) {
         continue;
       }
