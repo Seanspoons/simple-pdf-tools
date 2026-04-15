@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { ConfirmModal } from '../ConfirmModal';
 import { FloatingMessage } from '../FloatingMessage';
 import { UploadPanel } from '../UploadPanel';
+import splitSelectedPdfIcon from '../../assets/split-selected-pdf.svg';
+import splitAllPdfIcon from '../../assets/split-all-pdf.svg';
+import splitRangePdfIcon from '../../assets/split-range-pdf.svg';
 import { clearToolDraft, loadToolDraft, saveToolDraft } from '../../utils/toolDraftStore';
 import { PdfPagePreview, renderPdfPagePreviews } from '../../utils/pdfPreview';
 import {
@@ -25,6 +29,8 @@ type StoredSplitDraft = {
   rangesText: string;
 };
 
+type ConfirmAction = 'clear' | null;
+
 const SPLIT_DRAFT_ID = 'split-pdf-draft';
 
 function formatBytes(bytes: number): string {
@@ -43,6 +49,21 @@ function sortNumbersAscending(values: number[]) {
   return [...values].sort((a, b) => a - b);
 }
 
+function SplitModeIcon({ mode }: { mode: SplitMode }) {
+  const iconSrc =
+    mode === 'selected-pages'
+      ? splitSelectedPdfIcon
+      : mode === 'every-page'
+        ? splitAllPdfIcon
+        : splitRangePdfIcon;
+
+  return (
+    <span className="split-mode-icon" aria-hidden="true">
+      <img src={iconSrc} alt="" className="split-mode-icon-image" />
+    </span>
+  );
+}
+
 export function SplitPdfTool() {
   const hasRestoredDraftRef = useRef(false);
   const [file, setFile] = useState<File | null>(null);
@@ -52,6 +73,7 @@ export function SplitPdfTool() {
   const [pageCount, setPageCount] = useState<number | null>(null);
   const [previewStatus, setPreviewStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [isBusy, setIsBusy] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
@@ -118,7 +140,7 @@ export function SplitPdfTool() {
     setPreviewStatus('loading');
     setErrorMessage(null);
 
-      void renderPdfPagePreviews(file, undefined, { maxWidth: 180, maxHeight: 220, maxScale: 1.1 })
+      void renderPdfPagePreviews(file, undefined, { maxWidth: 240, maxHeight: 320, maxScale: 1.5 })
       .then(({ pageCount, previews }) => {
         if (isCancelled) {
           return;
@@ -201,6 +223,20 @@ export function SplitPdfTool() {
 
   function clearSelectedPages() {
     setPages((current) => current.map((page) => ({ ...page, selected: false })));
+  }
+
+  function handleStartNewSplit() {
+    pendingSelectionRef.current = null;
+    setFile(null);
+    setMode('selected-pages');
+    setPages([]);
+    setRangesText('1-2\n3-4');
+    setPageCount(null);
+    setPreviewStatus('idle');
+    setConfirmAction(null);
+    setErrorMessage(null);
+    setStatusMessage('Ready for a new split.');
+    void clearToolDraft(SPLIT_DRAFT_ID);
   }
 
   async function exportSplit() {
@@ -347,16 +383,25 @@ export function SplitPdfTool() {
         </div>
         <div className="split-mode-grid">
           <button type="button" className={`choice-card ${mode === 'selected-pages' ? 'is-selected' : ''}`} onClick={() => setMode('selected-pages')}>
-            <span className="choice-card-title">Extract selected pages</span>
-            <span className="choice-card-copy">Choose the pages you want in one new PDF.</span>
+            <SplitModeIcon mode="selected-pages" />
+            <span className="choice-card-body">
+              <span className="choice-card-title">Extract selected pages</span>
+              <span className="choice-card-copy">Choose the pages you want in one new PDF.</span>
+            </span>
           </button>
           <button type="button" className={`choice-card ${mode === 'every-page' ? 'is-selected' : ''}`} onClick={() => setMode('every-page')}>
-            <span className="choice-card-title">Split every page</span>
-            <span className="choice-card-copy">Create one PDF file for each page.</span>
+            <SplitModeIcon mode="every-page" />
+            <span className="choice-card-body">
+              <span className="choice-card-title">Split every page</span>
+              <span className="choice-card-copy">Create one PDF file for each page.</span>
+            </span>
           </button>
           <button type="button" className={`choice-card ${mode === 'page-ranges' ? 'is-selected' : ''}`} onClick={() => setMode('page-ranges')}>
-            <span className="choice-card-title">Split by page ranges</span>
-            <span className="choice-card-copy">Create one PDF for each range you enter.</span>
+            <SplitModeIcon mode="page-ranges" />
+            <span className="choice-card-body">
+              <span className="choice-card-title">Split by page ranges</span>
+              <span className="choice-card-copy">Create one PDF for each range you enter.</span>
+            </span>
           </button>
         </div>
         {mode === 'page-ranges' ? (
@@ -406,17 +451,24 @@ export function SplitPdfTool() {
               <button
                 key={page.pageNumber}
                 type="button"
-                className={`thumb-card split-page-card ${page.selected ? 'is-selected' : ''}`}
+                className={`thumb-card merge-thumb-card split-page-card ${page.selected ? 'is-selected' : ''}`}
                 onClick={() => mode === 'selected-pages' && togglePageSelection(page.pageNumber)}
                 disabled={mode !== 'selected-pages'}
               >
-                {page.previewUrl ? (
-                  <img src={page.previewUrl} alt="" className="thumb-image split-thumb-image" />
-                ) : (
-                  <div className={`merge-thumb-placeholder merge-thumb-placeholder-${page.previewOrientation}`}>
-                    <span>Preview unavailable</span>
-                  </div>
-                )}
+                {page.selected ? (
+                  <span className="split-page-check" aria-hidden="true">
+                    <span className="split-page-check-mark">✓</span>
+                  </span>
+                ) : null}
+                <div className="merge-thumb-preview split-thumb-preview">
+                  {page.previewUrl ? (
+                    <img src={page.previewUrl} alt="" className="thumb-image split-thumb-image" />
+                  ) : (
+                    <div className={`merge-thumb-placeholder merge-thumb-placeholder-${page.previewOrientation}`}>
+                      <span>Preview unavailable</span>
+                    </div>
+                  )}
+                </div>
                 <div className="thumb-meta">
                   <span className="thumb-order">Page {page.pageNumber}</span>
                   <span className="thumb-drag-hint">
@@ -459,7 +511,7 @@ export function SplitPdfTool() {
           ) : null}
         </div>
       </div>
-      <div className="panel-heading-actions">
+      <div className="export-actions">
         <button
           type="button"
           className="primary-button"
@@ -474,6 +526,14 @@ export function SplitPdfTool() {
           }
         >
           {mode === 'every-page' ? 'Export Split PDFs' : 'Export Split PDF'}
+        </button>
+        <button
+          type="button"
+          className="ghost-button"
+          onClick={() => setConfirmAction('clear')}
+          disabled={!file || isBusy}
+        >
+          Start a New Split
         </button>
       </div>
     </section>
@@ -524,6 +584,15 @@ export function SplitPdfTool() {
         {preview}
         {exportPanel}
       </div>
+
+      <ConfirmModal
+        open={confirmAction !== null}
+        title="Start a new split?"
+        message="This will remove the current PDF and split setup so you can begin again."
+        confirmLabel="Start New Split"
+        onConfirm={handleStartNewSplit}
+        onCancel={() => setConfirmAction(null)}
+      />
     </>
   );
 }
