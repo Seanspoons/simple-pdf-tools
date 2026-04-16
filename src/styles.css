@@ -3180,6 +3180,10 @@ select:disabled {
 }
 
 @media (max-width: 640px) {
+  .suite-grid {
+    grid-template-columns: 1fr;
+  }
+
   .controls-grid {
     grid-template-columns: 1fr;
   }
