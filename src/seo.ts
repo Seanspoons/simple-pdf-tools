@@ -53,9 +53,9 @@ export const ROUTE_SEO: Record<string, RouteSeo> = {
     imageAlt: 'Extract Pages preview'
   },
   '/rotate-pdf': {
-    title: 'Rotate PDF | Simple PDF Tools',
+    title: 'Rotate PDF | Fix PDF Page Orientation in Your Browser',
     description:
-      'Rotate PDF is planned for Simple PDF Tools. Keep an eye on this route for a browser-based PDF rotation tool.',
+      'Rotate PDF pages in your browser by fixing sideways scans, mixed page orientation, and exported slide decks with no uploads required.',
     canonicalPath: '/rotate-pdf',
     image: `${SITE_URL}/og-home.png`,
     imageAlt: 'Rotate PDF preview'

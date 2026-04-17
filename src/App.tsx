@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { MergePdfTool } from './components/pdf/MergePdfTool';
+import { RotatePdfTool } from './components/pdf/RotatePdfTool';
 import { SplitPdfTool } from './components/pdf/SplitPdfTool';
 import compressPdfIcon from './assets/compress-pdf.svg?raw';
 import mergePdfIcon from './assets/merge-pdf.svg?raw';
@@ -55,7 +56,7 @@ const TOOL_CARDS: ToolCard[] = [
     name: 'Rotate PDF',
     description: 'Fix sideways scans and mixed page orientation.',
     blurb: 'Built for scanned documents, forms, and exported slide decks.',
-    status: 'soon',
+    status: 'live',
     icon: 'rotate'
   }
 ];
@@ -346,12 +347,12 @@ export default function App() {
         return <MergePdfTool />;
       case '/split-pdf':
         return <SplitPdfTool />;
+      case '/rotate-pdf':
+        return <RotatePdfTool />;
       case '/compress-pdf':
         return <ComingSoonPage toolName="Compress PDF" onNavigate={navigateTo} />;
       case '/extract-pages':
         return <ComingSoonPage toolName="Extract Pages" onNavigate={navigateTo} />;
-      case '/rotate-pdf':
-        return <ComingSoonPage toolName="Rotate PDF" onNavigate={navigateTo} />;
       default:
         return <HomePage onNavigate={navigateTo} />;
     }
