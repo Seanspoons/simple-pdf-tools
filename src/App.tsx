@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { MergePdfTool } from './components/pdf/MergePdfTool';
 import { SplitPdfTool } from './components/pdf/SplitPdfTool';
+import compressPdfIcon from './assets/compress-pdf.svg';
 import mergePdfIcon from './assets/merge-pdf.svg';
 import splitPdfIcon from './assets/split-pdf.svg';
 import { applyRouteSeo } from './seo';
@@ -20,7 +21,6 @@ const LIVE_TOOL_LINKS: Array<{ path: Exclude<AppRoute, '/'>; label: string }> = 
   { path: '/merge-pdf', label: 'Merge PDF' },
   { path: '/split-pdf', label: 'Split PDF' },
   { path: '/compress-pdf', label: 'Compress PDF' },
-  { path: '/extract-pages', label: 'Extract Pages' },
   { path: '/rotate-pdf', label: 'Rotate PDF' }
 ];
 
@@ -48,14 +48,6 @@ const TOOL_CARDS: ToolCard[] = [
     blurb: 'A focused tool for reducing PDF size without extra software.',
     status: 'soon',
     icon: 'compress'
-  },
-  {
-    path: '/extract-pages',
-    name: 'Extract Pages',
-    description: 'Pull selected pages into a new PDF file.',
-    blurb: 'Helpful when you only need a few pages from a larger document.',
-    status: 'soon',
-    icon: 'extract'
   },
   {
     path: '/rotate-pdf',
@@ -117,18 +109,17 @@ function ToolIcon({ kind }: { kind: ToolCard['icon'] }) {
     );
   }
 
+  if (kind === 'compress') {
+    return (
+      <span className={`suite-tool-icon suite-tool-icon-${kind}`} aria-hidden="true">
+        <img src={compressPdfIcon} alt="" className="suite-tool-icon-image" />
+      </span>
+    );
+  }
+
   return (
     <span className={`suite-tool-icon suite-tool-icon-${kind}`} aria-hidden="true">
       <svg viewBox="0 0 72 72" className="suite-tool-icon-svg" focusable="false">
-        {kind === 'compress' ? (
-          <>
-            <path d="M16 13h26l8 8v38H16z" className="icon-surface" strokeLinejoin="round" />
-            <path d="M42 13v10h10" className="icon-accent-outline" strokeLinejoin="round" />
-            <path d="M26 30h14" className="icon-accent-stroke" />
-            <path d="M29 38h8" className="icon-accent-stroke" />
-            <path d="M31 46h4" className="icon-accent-stroke" />
-          </>
-        ) : null}
         {kind === 'extract' ? (
           <>
             <path d="M15 15h22l7 7v33H15z" className="icon-surface" strokeLinejoin="round" />
