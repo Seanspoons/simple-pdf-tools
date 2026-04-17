@@ -3,6 +3,7 @@ import { MergePdfTool } from './components/pdf/MergePdfTool';
 import { SplitPdfTool } from './components/pdf/SplitPdfTool';
 import compressPdfIcon from './assets/compress-pdf.svg';
 import mergePdfIcon from './assets/merge-pdf.svg';
+import rotatePdfIcon from './assets/rotate-pdf.svg';
 import splitPdfIcon from './assets/split-pdf.svg';
 import { applyRouteSeo } from './seo';
 
@@ -117,6 +118,14 @@ function ToolIcon({ kind }: { kind: ToolCard['icon'] }) {
     );
   }
 
+  if (kind === 'rotate') {
+    return (
+      <span className={`suite-tool-icon suite-tool-icon-${kind}`} aria-hidden="true">
+        <img src={rotatePdfIcon} alt="" className="suite-tool-icon-image" />
+      </span>
+    );
+  }
+
   return (
     <span className={`suite-tool-icon suite-tool-icon-${kind}`} aria-hidden="true">
       <svg viewBox="0 0 72 72" className="suite-tool-icon-svg" focusable="false">
@@ -127,14 +136,6 @@ function ToolIcon({ kind }: { kind: ToolCard['icon'] }) {
             <path d="M34 34h20" className="icon-accent-stroke" />
             <path d="M41 27l-7 7 7 7" className="icon-accent-stroke" />
             <rect x="47" y="24" width="10" height="21" rx="4" className="icon-accent-soft-fill" />
-          </>
-        ) : null}
-        {kind === 'rotate' ? (
-          <>
-            <path d="M16 13h26l8 8v38H16z" className="icon-surface" strokeLinejoin="round" />
-            <path d="M42 13v10h10" className="icon-accent-outline" strokeLinejoin="round" />
-            <path d="M27 45a11 11 0 1 0 0-16" className="icon-accent-stroke" />
-            <path d="M23 27v10h10" className="icon-accent-stroke" />
           </>
         ) : null}
       </svg>
