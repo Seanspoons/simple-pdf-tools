@@ -1011,10 +1011,6 @@ select:disabled {
   gap: 22px;
 }
 
-.rotate-action-note {
-  margin: 14px 0 0;
-}
-
 .rotate-page-card {
   flex: 0 0 176px;
 }
@@ -1215,6 +1211,10 @@ select:disabled {
   margin: 0;
   color: var(--text-soft);
   font-size: 0.94rem;
+}
+
+.helper-text.rotate-action-note {
+  margin-top: 20px;
 }
 
 .section-helper-text {
