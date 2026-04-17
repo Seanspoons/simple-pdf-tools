@@ -3180,6 +3180,10 @@ select:disabled {
 }
 
 @media (max-width: 640px) {
+  .coming-soon-preview-grid {
+    grid-template-columns: 1fr;
+  }
+
   .suite-grid {
     grid-template-columns: 1fr;
   }
