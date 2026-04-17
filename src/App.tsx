@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { MergePdfTool } from './components/pdf/MergePdfTool';
 import { SplitPdfTool } from './components/pdf/SplitPdfTool';
-import compressPdfIcon from './assets/compress-pdf.svg';
-import mergePdfIcon from './assets/merge-pdf.svg';
-import rotatePdfIcon from './assets/rotate-pdf.svg';
-import splitPdfIcon from './assets/split-pdf.svg';
+import compressPdfIcon from './assets/compress-pdf.svg?raw';
+import mergePdfIcon from './assets/merge-pdf.svg?raw';
+import rotatePdfIcon from './assets/rotate-pdf.svg?raw';
+import splitPdfIcon from './assets/split-pdf.svg?raw';
 import { applyRouteSeo } from './seo';
 
 type AppRoute = '/' | '/merge-pdf' | '/split-pdf' | '/compress-pdf' | '/extract-pages' | '/rotate-pdf';
@@ -93,37 +93,37 @@ function navigateTo(path: AppRoute) {
   window.dispatchEvent(new PopStateEvent('popstate'));
 }
 
+function InlineToolSvg({
+  kind,
+  svgMarkup
+}: {
+  kind: ToolCard['icon'];
+  svgMarkup: string;
+}) {
+  return (
+    <span
+      className={`suite-tool-icon suite-tool-icon-${kind} suite-tool-icon-inline`}
+      aria-hidden="true"
+      dangerouslySetInnerHTML={{ __html: svgMarkup }}
+    />
+  );
+}
+
 function ToolIcon({ kind }: { kind: ToolCard['icon'] }) {
   if (kind === 'merge') {
-    return (
-      <span className={`suite-tool-icon suite-tool-icon-${kind}`} aria-hidden="true">
-        <img src={mergePdfIcon} alt="" className="suite-tool-icon-image" />
-      </span>
-    );
+    return <InlineToolSvg kind={kind} svgMarkup={mergePdfIcon} />;
   }
 
   if (kind === 'split') {
-    return (
-      <span className={`suite-tool-icon suite-tool-icon-${kind}`} aria-hidden="true">
-        <img src={splitPdfIcon} alt="" className="suite-tool-icon-image" />
-      </span>
-    );
+    return <InlineToolSvg kind={kind} svgMarkup={splitPdfIcon} />;
   }
 
   if (kind === 'compress') {
-    return (
-      <span className={`suite-tool-icon suite-tool-icon-${kind}`} aria-hidden="true">
-        <img src={compressPdfIcon} alt="" className="suite-tool-icon-image" />
-      </span>
-    );
+    return <InlineToolSvg kind={kind} svgMarkup={compressPdfIcon} />;
   }
 
   if (kind === 'rotate') {
-    return (
-      <span className={`suite-tool-icon suite-tool-icon-${kind}`} aria-hidden="true">
-        <img src={rotatePdfIcon} alt="" className="suite-tool-icon-image" />
-      </span>
-    );
+    return <InlineToolSvg kind={kind} svgMarkup={rotatePdfIcon} />;
   }
 
   return (
